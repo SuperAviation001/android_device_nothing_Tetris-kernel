@@ -1,0 +1,60 @@
+/system_dlkm/lib/modules/nhc_ipv6.ko: /system_dlkm/lib/modules/6lowpan.ko
+/system_dlkm/lib/modules/ppp_deflate.ko: /system_dlkm/lib/modules/ppp_generic.ko /system_dlkm/lib/modules/slhc.ko
+/system_dlkm/lib/modules/nhc_udp.ko: /system_dlkm/lib/modules/6lowpan.ko
+/system_dlkm/lib/modules/usbserial.ko:
+/system_dlkm/lib/modules/nhc_hop.ko: /system_dlkm/lib/modules/6lowpan.ko
+/system_dlkm/lib/modules/slhc.ko:
+/system_dlkm/lib/modules/ftdi_sio.ko: /system_dlkm/lib/modules/usbserial.ko
+/system_dlkm/lib/modules/cdc_ncm.ko: /system_dlkm/lib/modules/cdc_ether.ko /system_dlkm/lib/modules/usbnet.ko /system_dlkm/lib/modules/mii.ko
+/system_dlkm/lib/modules/ppp_generic.ko: /system_dlkm/lib/modules/slhc.ko
+/system_dlkm/lib/modules/can-bcm.ko: /system_dlkm/lib/modules/can.ko
+/system_dlkm/lib/modules/hidp.ko: /system_dlkm/lib/modules/bluetooth.ko /system_dlkm/lib/modules/rfkill.ko
+/system_dlkm/lib/modules/rtl8150.ko:
+/system_dlkm/lib/modules/l2tp_core.ko:
+/system_dlkm/lib/modules/r8152.ko: /system_dlkm/lib/modules/mii.ko
+/system_dlkm/lib/modules/nhc_routing.ko: /system_dlkm/lib/modules/6lowpan.ko
+/system_dlkm/lib/modules/bluetooth.ko: /system_dlkm/lib/modules/rfkill.ko
+/system_dlkm/lib/modules/nhc_mobility.ko: /system_dlkm/lib/modules/6lowpan.ko
+/system_dlkm/lib/modules/asix.ko: /system_dlkm/lib/modules/usbnet.ko /system_dlkm/lib/modules/mii.ko
+/system_dlkm/lib/modules/can-dev.ko:
+/system_dlkm/lib/modules/rfkill.ko:
+/system_dlkm/lib/modules/8021q.ko:
+/system_dlkm/lib/modules/ppp_mppe.ko: /system_dlkm/lib/modules/libarc4.ko /system_dlkm/lib/modules/ppp_generic.ko /system_dlkm/lib/modules/slhc.ko
+/system_dlkm/lib/modules/nhc_fragment.ko: /system_dlkm/lib/modules/6lowpan.ko
+/system_dlkm/lib/modules/6lowpan.ko:
+/system_dlkm/lib/modules/cdc_eem.ko: /system_dlkm/lib/modules/usbnet.ko /system_dlkm/lib/modules/mii.ko
+/system_dlkm/lib/modules/mac802154.ko: /system_dlkm/lib/modules/ieee802154.ko
+/system_dlkm/lib/modules/cdc_ether.ko: /system_dlkm/lib/modules/usbnet.ko /system_dlkm/lib/modules/mii.ko
+/system_dlkm/lib/modules/usbnet.ko: /system_dlkm/lib/modules/mii.ko
+/system_dlkm/lib/modules/libarc4.ko:
+/system_dlkm/lib/modules/r8153_ecm.ko: /system_dlkm/lib/modules/r8152.ko /system_dlkm/lib/modules/cdc_ether.ko /system_dlkm/lib/modules/usbnet.ko /system_dlkm/lib/modules/mii.ko
+/system_dlkm/lib/modules/nhc_dest.ko: /system_dlkm/lib/modules/6lowpan.ko
+/system_dlkm/lib/modules/btqca.ko: /system_dlkm/lib/modules/bluetooth.ko /system_dlkm/lib/modules/rfkill.ko
+/system_dlkm/lib/modules/ieee802154_socket.ko: /system_dlkm/lib/modules/ieee802154.ko
+/system_dlkm/lib/modules/hci_uart.ko: /system_dlkm/lib/modules/btqca.ko /system_dlkm/lib/modules/btbcm.ko /system_dlkm/lib/modules/bluetooth.ko /system_dlkm/lib/modules/rfkill.ko
+/system_dlkm/lib/modules/aqc111.ko: /system_dlkm/lib/modules/usbnet.ko /system_dlkm/lib/modules/mii.ko
+/system_dlkm/lib/modules/kheaders.ko:
+/system_dlkm/lib/modules/pptp.ko: /system_dlkm/lib/modules/pppox.ko /system_dlkm/lib/modules/ppp_generic.ko /system_dlkm/lib/modules/slhc.ko
+/system_dlkm/lib/modules/tipc.ko:
+/system_dlkm/lib/modules/ieee802154.ko:
+/system_dlkm/lib/modules/zsmalloc.ko:
+/system_dlkm/lib/modules/can.ko:
+/system_dlkm/lib/modules/btbcm.ko: /system_dlkm/lib/modules/bluetooth.ko /system_dlkm/lib/modules/rfkill.ko
+/system_dlkm/lib/modules/rfcomm.ko: /system_dlkm/lib/modules/bluetooth.ko /system_dlkm/lib/modules/rfkill.ko
+/system_dlkm/lib/modules/gzvm.ko:
+/system_dlkm/lib/modules/ieee802154_6lowpan.ko: /system_dlkm/lib/modules/ieee802154.ko /system_dlkm/lib/modules/6lowpan.ko
+/system_dlkm/lib/modules/wwan.ko:
+/system_dlkm/lib/modules/l2tp_ppp.ko: /system_dlkm/lib/modules/l2tp_core.ko /system_dlkm/lib/modules/pppox.ko /system_dlkm/lib/modules/ppp_generic.ko /system_dlkm/lib/modules/slhc.ko
+/system_dlkm/lib/modules/cdc-acm.ko:
+/system_dlkm/lib/modules/ax88179_178a.ko: /system_dlkm/lib/modules/usbnet.ko /system_dlkm/lib/modules/mii.ko
+/system_dlkm/lib/modules/vcan.ko: /system_dlkm/lib/modules/can-dev.ko
+/system_dlkm/lib/modules/bsd_comp.ko: /system_dlkm/lib/modules/ppp_generic.ko /system_dlkm/lib/modules/slhc.ko
+/system_dlkm/lib/modules/can-raw.ko: /system_dlkm/lib/modules/can.ko
+/system_dlkm/lib/modules/pppox.ko: /system_dlkm/lib/modules/ppp_generic.ko /system_dlkm/lib/modules/slhc.ko
+/system_dlkm/lib/modules/can-gw.ko: /system_dlkm/lib/modules/can.ko
+/system_dlkm/lib/modules/btsdio.ko: /system_dlkm/lib/modules/bluetooth.ko /system_dlkm/lib/modules/rfkill.ko
+/system_dlkm/lib/modules/diag.ko: /system_dlkm/lib/modules/tipc.ko
+/system_dlkm/lib/modules/zram.ko: /system_dlkm/lib/modules/zsmalloc.ko
+/system_dlkm/lib/modules/nfc.ko: /system_dlkm/lib/modules/rfkill.ko
+/system_dlkm/lib/modules/slcan.ko: /system_dlkm/lib/modules/can-dev.ko
+/system_dlkm/lib/modules/mii.ko:

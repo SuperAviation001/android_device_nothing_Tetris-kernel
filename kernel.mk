@@ -4,6 +4,13 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
+# system_dlkm modules
+DLKM_MODULES_ORIG := $(LOCAL_PATH)/system_dlkm
+DLKM_MODULES_DEST := $(TARGET_COPY_OUT_SYSTEM_DLKM)/lib/modules
+
+PRODUCT_COPY_FILES += \
+    $(call find-copy-subdir-files,*,$(DLKM_MODULES_ORIG)/,$(DLKM_MODULES_DEST))
+
 # DLKM modules
 DLKM_MODULES_ORIG := $(LOCAL_PATH)/vendor_dlkm
 DLKM_MODULES_DEST := $(TARGET_COPY_OUT_VENDOR_DLKM)/lib/modules
