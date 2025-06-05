@@ -1,28 +1,27 @@
-/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
-#ifndef _LINUX_IOPRIO_H
-#define _LINUX_IOPRIO_H
+/* SPDX-License-Identifier: GPL-2.0 */
+#ifndef IOPRIO_H
+#define IOPRIO_H
+
+#include <linux/sched.h>
+#include <linux/iocontext.h>
 
 /*
  * Gives us 8 prio classes with 13-bits of data for each class
  */
-#define IOPRIO_CLASS_SHIFT	13
-#define IOPRIO_CLASS_MASK	0x07
+#define IOPRIO_CLASS_SHIFT	(13)
 #define IOPRIO_PRIO_MASK	((1UL << IOPRIO_CLASS_SHIFT) - 1)
 
-#define IOPRIO_PRIO_CLASS(ioprio)	\
-	(((ioprio) >> IOPRIO_CLASS_SHIFT) & IOPRIO_CLASS_MASK)
-#define IOPRIO_PRIO_DATA(ioprio)	((ioprio) & IOPRIO_PRIO_MASK)
-#define IOPRIO_PRIO_VALUE(class, data)	\
-	((((class) & IOPRIO_CLASS_MASK) << IOPRIO_CLASS_SHIFT) | \
-	 ((data) & IOPRIO_PRIO_MASK))
+#define IOPRIO_PRIO_CLASS(mask)	((mask) >> IOPRIO_CLASS_SHIFT)
+#define IOPRIO_PRIO_DATA(mask)	((mask) & IOPRIO_PRIO_MASK)
+#define IOPRIO_PRIO_VALUE(class, data)	(((class) << IOPRIO_CLASS_SHIFT) | data)
+
+#define ioprio_valid(mask)	(IOPRIO_PRIO_CLASS((mask)) != IOPRIO_CLASS_NONE)
 
 /*
- * These are the io priority groups as implemented by the BFQ and mq-deadline
- * schedulers. RT is the realtime class, it always gets premium service. For
- * ATA disks supporting NCQ IO priority, RT class IOs will be processed using
- * high priority NCQ commands. BE is the best-effort scheduling class, the
- * default for any process. IDLE is the idle scheduling class, it is only
- * served when no one else is using the disk.
+ * These are the io priority groups as implemented by CFQ. RT is the realtime
+ * class, it always gets premium service. BE is the best-effort scheduling
+ * class, the default for any process. IDLE is the idle scheduling class, it
+ * is only served when no one else is using the disk.
  */
 enum {
 	IOPRIO_CLASS_NONE,
@@ -32,10 +31,9 @@ enum {
 };
 
 /*
- * The RT and BE priority classes both support up to 8 priority levels.
+ * 8 best effort priority levels are supported
  */
-#define IOPRIO_NR_LEVELS	8
-#define IOPRIO_BE_NR		IOPRIO_NR_LEVELS
+#define IOPRIO_BE_NR	(8)
 
 enum {
 	IOPRIO_WHO_PROCESS = 1,
@@ -44,9 +42,38 @@ enum {
 };
 
 /*
- * Fallback BE priority level.
+ * Fallback BE priority
  */
-#define IOPRIO_NORM	4
-#define IOPRIO_BE_NORM	IOPRIO_NORM
+#define IOPRIO_NORM	(4)
 
-#endif /* _LINUX_IOPRIO_H */
+/*
+ * if process has set io priority explicitly, use that. if not, convert
+ * the cpu scheduler nice value to an io priority
+ */
+static inline int task_nice_ioprio(struct task_struct *task)
+{
+	return (task_nice(task) + 20) / 5;
+}
+
+/*
+ * This is for the case where the task hasn't asked for a specific IO class.
+ * Check for idle and rt task process, and return appropriate IO class.
+ */
+static inline int task_nice_ioclass(struct task_struct *task)
+{
+	if (task->policy == SCHED_IDLE)
+		return IOPRIO_CLASS_IDLE;
+	else if (task->policy == SCHED_FIFO || task->policy == SCHED_RR)
+		return IOPRIO_CLASS_RT;
+	else
+		return IOPRIO_CLASS_BE;
+}
+
+/*
+ * For inheritance, return the highest of the two given priorities
+ */
+extern int ioprio_best(unsigned short aprio, unsigned short bprio);
+
+extern int set_task_ioprio(struct task_struct *task, int ioprio);
+
+#endif

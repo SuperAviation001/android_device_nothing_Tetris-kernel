@@ -1,65 +1,81 @@
-/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
+/* SPDX-License-Identifier: GPL-2.0 */
 #ifndef __SOCK_DIAG_H__
 #define __SOCK_DIAG_H__
 
-#include <linux/types.h>
+#include <linux/netlink.h>
+#include <linux/user_namespace.h>
+#include <net/net_namespace.h>
+#include <net/sock.h>
+#include <uapi/linux/sock_diag.h>
 
-#define SOCK_DIAG_BY_FAMILY 20
-#define SOCK_DESTROY 21
+struct sk_buff;
+struct nlmsghdr;
+struct sock;
 
-struct sock_diag_req {
-	__u8	sdiag_family;
-	__u8	sdiag_protocol;
+struct sock_diag_handler {
+	__u8 family;
+	int (*dump)(struct sk_buff *skb, struct nlmsghdr *nlh);
+	int (*get_info)(struct sk_buff *skb, struct sock *sk);
+	int (*destroy)(struct sk_buff *skb, struct nlmsghdr *nlh);
 };
 
-enum {
-	SK_MEMINFO_RMEM_ALLOC,
-	SK_MEMINFO_RCVBUF,
-	SK_MEMINFO_WMEM_ALLOC,
-	SK_MEMINFO_SNDBUF,
-	SK_MEMINFO_FWD_ALLOC,
-	SK_MEMINFO_WMEM_QUEUED,
-	SK_MEMINFO_OPTMEM,
-	SK_MEMINFO_BACKLOG,
-	SK_MEMINFO_DROPS,
+int sock_diag_register(const struct sock_diag_handler *h);
+void sock_diag_unregister(const struct sock_diag_handler *h);
 
-	SK_MEMINFO_VARS,
-};
+void sock_diag_register_inet_compat(int (*fn)(struct sk_buff *skb, struct nlmsghdr *nlh));
+void sock_diag_unregister_inet_compat(int (*fn)(struct sk_buff *skb, struct nlmsghdr *nlh));
 
-enum sknetlink_groups {
-	SKNLGRP_NONE,
-	SKNLGRP_INET_TCP_DESTROY,
-	SKNLGRP_INET_UDP_DESTROY,
-	SKNLGRP_INET6_TCP_DESTROY,
-	SKNLGRP_INET6_UDP_DESTROY,
-	__SKNLGRP_MAX,
-};
-#define SKNLGRP_MAX	(__SKNLGRP_MAX - 1)
+u64 sock_gen_cookie(struct sock *sk);
+int sock_diag_check_cookie(struct sock *sk, const __u32 *cookie);
+void sock_diag_save_cookie(struct sock *sk, __u32 *cookie);
 
-enum {
-	SK_DIAG_BPF_STORAGE_REQ_NONE,
-	SK_DIAG_BPF_STORAGE_REQ_MAP_FD,
-	__SK_DIAG_BPF_STORAGE_REQ_MAX,
-};
+int sock_diag_put_meminfo(struct sock *sk, struct sk_buff *skb, int attr);
+int sock_diag_put_filterinfo(bool may_report_filterinfo, struct sock *sk,
+			     struct sk_buff *skb, int attrtype);
 
-#define SK_DIAG_BPF_STORAGE_REQ_MAX	(__SK_DIAG_BPF_STORAGE_REQ_MAX - 1)
+static inline
+enum sknetlink_groups sock_diag_destroy_group(const struct sock *sk)
+{
+	switch (sk->sk_family) {
+	case AF_INET:
+		if (sk->sk_type == SOCK_RAW)
+			return SKNLGRP_NONE;
 
-enum {
-	SK_DIAG_BPF_STORAGE_REP_NONE,
-	SK_DIAG_BPF_STORAGE,
-	__SK_DIAG_BPF_STORAGE_REP_MAX,
-};
+		switch (sk->sk_protocol) {
+		case IPPROTO_TCP:
+			return SKNLGRP_INET_TCP_DESTROY;
+		case IPPROTO_UDP:
+			return SKNLGRP_INET_UDP_DESTROY;
+		default:
+			return SKNLGRP_NONE;
+		}
+	case AF_INET6:
+		if (sk->sk_type == SOCK_RAW)
+			return SKNLGRP_NONE;
 
-#define SK_DIAB_BPF_STORAGE_REP_MAX	(__SK_DIAG_BPF_STORAGE_REP_MAX - 1)
+		switch (sk->sk_protocol) {
+		case IPPROTO_TCP:
+			return SKNLGRP_INET6_TCP_DESTROY;
+		case IPPROTO_UDP:
+			return SKNLGRP_INET6_UDP_DESTROY;
+		default:
+			return SKNLGRP_NONE;
+		}
+	default:
+		return SKNLGRP_NONE;
+	}
+}
 
-enum {
-	SK_DIAG_BPF_STORAGE_NONE,
-	SK_DIAG_BPF_STORAGE_PAD,
-	SK_DIAG_BPF_STORAGE_MAP_ID,
-	SK_DIAG_BPF_STORAGE_MAP_VALUE,
-	__SK_DIAG_BPF_STORAGE_MAX,
-};
+static inline
+bool sock_diag_has_destroy_listeners(const struct sock *sk)
+{
+	const struct net *n = sock_net(sk);
+	const enum sknetlink_groups group = sock_diag_destroy_group(sk);
 
-#define SK_DIAG_BPF_STORAGE_MAX        (__SK_DIAG_BPF_STORAGE_MAX - 1)
+	return group != SKNLGRP_NONE && n->diag_nlsk &&
+		netlink_has_listeners(n->diag_nlsk, group);
+}
+void sock_diag_broadcast_destroy(struct sock *sk);
 
-#endif /* __SOCK_DIAG_H__ */
+int sock_diag_destroy(struct sock *sk, int err);
+#endif

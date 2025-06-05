@@ -1,206 +1,397 @@
-/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
+/* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _IPV6_H
 #define _IPV6_H
 
-#include <linux/libc-compat.h>
-#include <linux/types.h>
-#include <linux/stddef.h>
-#include <linux/in6.h>
-#include <asm/byteorder.h>
+#include <uapi/linux/ipv6.h>
 
-/* The latest drafts declared increase in minimal mtu up to 1280. */
-
-#define IPV6_MIN_MTU	1280
-
+#define ipv6_optlen(p)  (((p)->hdrlen+1) << 3)
+#define ipv6_authlen(p) (((p)->hdrlen+2) << 2)
 /*
- *	Advanced API
- *	source interface/address selection, source routing, etc...
- *	*under construction*
+ * This structure contains configuration options per IPv6 link.
+ */
+struct ipv6_devconf {
+	__s32		forwarding;
+	__s32		hop_limit;
+	__s32		mtu6;
+	__s32		ra_mtu;
+	__s32		accept_ra;
+	__s32		accept_redirects;
+	__s32		autoconf;
+	__s32		dad_transmits;
+	__s32		rtr_solicits;
+	__s32		rtr_solicit_interval;
+	__s32		rtr_solicit_max_interval;
+	__s32		rtr_solicit_delay;
+	__s32		force_mld_version;
+	__s32		mldv1_unsolicited_report_interval;
+	__s32		mldv2_unsolicited_report_interval;
+	__s32		use_tempaddr;
+	__s32		temp_valid_lft;
+	__s32		temp_prefered_lft;
+	__s32		regen_max_retry;
+	__s32		max_desync_factor;
+	__s32		max_addresses;
+	__s32		accept_ra_defrtr;
+	__s32		accept_ra_min_hop_limit;
+	__s32		accept_ra_pinfo;
+	__s32		ignore_routes_with_linkdown;
+#ifdef CONFIG_IPV6_ROUTER_PREF
+	__s32		accept_ra_rtr_pref;
+	__s32		rtr_probe_interval;
+#ifdef CONFIG_IPV6_ROUTE_INFO
+	__s32		accept_ra_rt_info_min_plen;
+	__s32		accept_ra_rt_info_max_plen;
+#endif
+#endif
+	__s32		accept_ra_rt_table;
+	__s32		proxy_ndp;
+	__s32		accept_source_route;
+	__s32		accept_ra_from_local;
+#ifdef CONFIG_IPV6_OPTIMISTIC_DAD
+	__s32		optimistic_dad;
+	__s32		use_optimistic;
+#endif
+#ifdef CONFIG_IPV6_MROUTE
+	__s32		mc_forwarding;
+#endif
+	__s32		disable_ipv6;
+	__s32		drop_unicast_in_l2_multicast;
+	__s32		accept_dad;
+	__s32		force_tllao;
+	__s32           ndisc_notify;
+	__s32		suppress_frag_ndisc;
+	__s32		accept_ra_mtu;
+	__s32		drop_unsolicited_na;
+	struct ipv6_stable_secret {
+		bool initialized;
+		struct in6_addr secret;
+	} stable_secret;
+	__s32		use_oif_addrs_only;
+	__s32		keep_addr_on_down;
+	__s32		seg6_enabled;
+#ifdef CONFIG_IPV6_SEG6_HMAC
+	__s32		seg6_require_hmac;
+#endif
+	__u32		enhanced_dad;
+	__u32		addr_gen_mode;
+	__s32		disable_policy;
+
+	struct ctl_table_header *sysctl_header;
+};
+
+struct ipv6_params {
+	__s32 disable_ipv6;
+	__s32 autoconf;
+};
+extern struct ipv6_params ipv6_defaults;
+#include <linux/icmpv6.h>
+#include <linux/tcp.h>
+#include <linux/udp.h>
+
+#include <net/inet_sock.h>
+
+static inline struct ipv6hdr *ipv6_hdr(const struct sk_buff *skb)
+{
+	return (struct ipv6hdr *)skb_network_header(skb);
+}
+
+static inline struct ipv6hdr *inner_ipv6_hdr(const struct sk_buff *skb)
+{
+	return (struct ipv6hdr *)skb_inner_network_header(skb);
+}
+
+static inline struct ipv6hdr *ipipv6_hdr(const struct sk_buff *skb)
+{
+	return (struct ipv6hdr *)skb_transport_header(skb);
+}
+
+/* 
+   This structure contains results of exthdrs parsing
+   as offsets from skb->nh.
  */
 
-#if __UAPI_DEF_IN6_PKTINFO
-struct in6_pktinfo {
-	struct in6_addr	ipi6_addr;
-	int		ipi6_ifindex;
+struct inet6_skb_parm {
+	int			iif;
+	__be16			ra;
+	__u16			dst0;
+	__u16			srcrt;
+	__u16			dst1;
+	__u16			lastopt;
+	__u16			nhoff;
+	__u16			flags;
+#if defined(CONFIG_IPV6_MIP6) || defined(CONFIG_IPV6_MIP6_MODULE)
+	__u16			dsthao;
+#endif
+	__u16			frag_max_size;
+
+#define IP6SKB_XFRM_TRANSFORMED	1
+#define IP6SKB_FORWARDED	2
+#define IP6SKB_REROUTED		4
+#define IP6SKB_ROUTERALERT	8
+#define IP6SKB_FRAGMENTED      16
+#define IP6SKB_HOPBYHOP        32
+#define IP6SKB_L3SLAVE         64
+#define IP6SKB_JUMBOGRAM      128
 };
+
+#if defined(CONFIG_NET_L3_MASTER_DEV)
+static inline bool ipv6_l3mdev_skb(__u16 flags)
+{
+	return flags & IP6SKB_L3SLAVE;
+}
+#else
+static inline bool ipv6_l3mdev_skb(__u16 flags)
+{
+	return false;
+}
 #endif
 
-#if __UAPI_DEF_IP6_MTUINFO
-struct ip6_mtuinfo {
-	struct sockaddr_in6	ip6m_addr;
-	__u32			ip6m_mtu;
-};
+#define IP6CB(skb)	((struct inet6_skb_parm*)((skb)->cb))
+#define IP6CBMTU(skb)	((struct ip6_mtuinfo *)((skb)->cb))
+
+static inline int inet6_iif(const struct sk_buff *skb)
+{
+	bool l3_slave = ipv6_l3mdev_skb(IP6CB(skb)->flags);
+
+	return l3_slave ? skb->skb_iif : IP6CB(skb)->iif;
+}
+
+static inline bool inet6_is_jumbogram(const struct sk_buff *skb)
+{
+	return !!(IP6CB(skb)->flags & IP6SKB_JUMBOGRAM);
+}
+
+/* can not be used in TCP layer after tcp_v6_fill_cb */
+static inline int inet6_sdif(const struct sk_buff *skb)
+{
+#if IS_ENABLED(CONFIG_NET_L3_MASTER_DEV)
+	if (skb && ipv6_l3mdev_skb(IP6CB(skb)->flags))
+		return IP6CB(skb)->iif;
 #endif
+	return 0;
+}
 
-struct in6_ifreq {
-	struct in6_addr	ifr6_addr;
-	__u32		ifr6_prefixlen;
-	int		ifr6_ifindex; 
+/* can not be used in TCP layer after tcp_v6_fill_cb */
+static inline bool inet6_exact_dif_match(struct net *net, struct sk_buff *skb)
+{
+#if defined(CONFIG_NET_L3_MASTER_DEV)
+	if (!net->ipv4.sysctl_tcp_l3mdev_accept &&
+	    skb && ipv6_l3mdev_skb(IP6CB(skb)->flags))
+		return true;
+#endif
+	return false;
+}
+
+struct tcp6_request_sock {
+	struct tcp_request_sock	  tcp6rsk_tcp;
 };
 
-#define IPV6_SRCRT_STRICT	0x01	/* Deprecated; will be removed */
-#define IPV6_SRCRT_TYPE_0	0	/* Deprecated; will be removed */
-#define IPV6_SRCRT_TYPE_2	2	/* IPv6 type 2 Routing Header	*/
-#define IPV6_SRCRT_TYPE_3	3	/* RPL Segment Routing with IPv6 */
-#define IPV6_SRCRT_TYPE_4	4	/* Segment Routing with IPv6 */
+struct ipv6_mc_socklist;
+struct ipv6_ac_socklist;
+struct ipv6_fl_socklist;
 
-/*
- *	routing header
+struct inet6_cork {
+	struct ipv6_txoptions *opt;
+	u8 hop_limit;
+	u8 tclass;
+};
+
+/**
+ * struct ipv6_pinfo - ipv6 private area
+ *
+ * In the struct sock hierarchy (tcp6_sock, upd6_sock, etc)
+ * this _must_ be the last member, so that inet6_sk_generic
+ * is able to calculate its offset from the base struct sock
+ * by using the struct proto->slab_obj_size member. -acme
  */
-struct ipv6_rt_hdr {
-	__u8		nexthdr;
-	__u8		hdrlen;
-	__u8		type;
-	__u8		segments_left;
+struct ipv6_pinfo {
+	struct in6_addr 	saddr;
+	struct in6_pktinfo	sticky_pktinfo;
+	const struct in6_addr		*daddr_cache;
+#ifdef CONFIG_IPV6_SUBTREES
+	const struct in6_addr		*saddr_cache;
+#endif
+
+	__be32			flow_label;
+	__u32			frag_size;
 
 	/*
-	 *	type specific data
-	 *	variable length field
+	 * Packed in 16bits.
+	 * Omit one shift by by putting the signed field at MSB.
 	 */
-};
-
-
-struct ipv6_opt_hdr {
-	__u8 		nexthdr;
-	__u8 		hdrlen;
-	/* 
-	 * TLV encoded option data follows.
-	 */
-} __attribute__((packed));	/* required for some archs */
-
-#define ipv6_destopt_hdr ipv6_opt_hdr
-#define ipv6_hopopt_hdr  ipv6_opt_hdr
-
-/* Router Alert option values (RFC2711) */
-#define IPV6_OPT_ROUTERALERT_MLD	0x0000	/* MLD(RFC2710) */
-
-/*
- *	routing header type 0 (used in cmsghdr struct)
- */
-
-struct rt0_hdr {
-	struct ipv6_rt_hdr	rt_hdr;
-	__u32			reserved;
-	struct in6_addr		addr[0];
-
-#define rt0_type		rt_hdr.type
-};
-
-/*
- *	routing header type 2
- */
-
-struct rt2_hdr {
-	struct ipv6_rt_hdr	rt_hdr;
-	__u32			reserved;
-	struct in6_addr		addr;
-
-#define rt2_type		rt_hdr.type
-};
-
-/*
- *	home address option in destination options header
- */
-
-struct ipv6_destopt_hao {
-	__u8			type;
-	__u8			length;
-	struct in6_addr		addr;
-} __attribute__((packed));
-
-/*
- *	IPv6 fixed header
- *
- *	BEWARE, it is incorrect. The first 4 bits of flow_lbl
- *	are glued to priority now, forming "class".
- */
-
-struct ipv6hdr {
-#if defined(__LITTLE_ENDIAN_BITFIELD)
-	__u8			priority:4,
-				version:4;
-#elif defined(__BIG_ENDIAN_BITFIELD)
-	__u8			version:4,
-				priority:4;
+#if defined(__BIG_ENDIAN_BITFIELD)
+	__s16			hop_limit:9;
+	__u16			__unused_1:7;
 #else
-#error	"Please fix <asm/byteorder.h>"
+	__u16			__unused_1:7;
+	__s16			hop_limit:9;
 #endif
-	__u8			flow_lbl[3];
 
-	__be16			payload_len;
-	__u8			nexthdr;
-	__u8			hop_limit;
+#if defined(__BIG_ENDIAN_BITFIELD)
+	/* Packed in 16bits. */
+	__s16			mcast_hops:9;
+	__u16			__unused_2:6,
+				mc_loop:1;
+#else
+	__u16			mc_loop:1,
+				__unused_2:6;
+	__s16			mcast_hops:9;
+#endif
+	int			ucast_oif;
+	int			mcast_oif;
 
-	__struct_group(/* no tag */, addrs, /* no attrs */,
-		struct	in6_addr	saddr;
-		struct	in6_addr	daddr;
-	);
+	/* pktoption flags */
+	union {
+		struct {
+			__u16	srcrt:1,
+				osrcrt:1,
+			        rxinfo:1,
+			        rxoinfo:1,
+				rxhlim:1,
+				rxohlim:1,
+				hopopts:1,
+				ohopopts:1,
+				dstopts:1,
+				odstopts:1,
+                                rxflow:1,
+				rxtclass:1,
+				rxpmtu:1,
+				rxorigdstaddr:1,
+				recvfragsize:1;
+				/* 1 bits hole */
+		} bits;
+		__u16		all;
+	} rxopt;
+
+	/* sockopt flags */
+	__u16			recverr:1,
+	                        sndflow:1,
+				repflow:1,
+				pmtudisc:3,
+				padding:1,	/* 1 bit hole */
+				srcprefs:3,	/* 001: prefer temporary address
+						 * 010: prefer public address
+						 * 100: prefer care-of address
+						 */
+				dontfrag:1,
+				autoflowlabel:1,
+				autoflowlabel_set:1;
+	__u8			min_hopcount;
+	__u8			tclass;
+	__be32			rcv_flowinfo;
+
+	__u32			dst_cookie;
+	__u32			rx_dst_cookie;
+
+	struct ipv6_mc_socklist	__rcu *ipv6_mc_list;
+	struct ipv6_ac_socklist	*ipv6_ac_list;
+	struct ipv6_fl_socklist __rcu *ipv6_fl_list;
+
+	struct ipv6_txoptions __rcu	*opt;
+	struct sk_buff		*pktoptions;
+	struct sk_buff		*rxpmtu;
+	struct inet6_cork	cork;
 };
 
-
-/* index values for the variables in ipv6_devconf */
-enum {
-	DEVCONF_FORWARDING = 0,
-	DEVCONF_HOPLIMIT,
-	DEVCONF_MTU6,
-	DEVCONF_ACCEPT_RA,
-	DEVCONF_ACCEPT_REDIRECTS,
-	DEVCONF_AUTOCONF,
-	DEVCONF_DAD_TRANSMITS,
-	DEVCONF_RTR_SOLICITS,
-	DEVCONF_RTR_SOLICIT_INTERVAL,
-	DEVCONF_RTR_SOLICIT_DELAY,
-	DEVCONF_USE_TEMPADDR,
-	DEVCONF_TEMP_VALID_LFT,
-	DEVCONF_TEMP_PREFERED_LFT,
-	DEVCONF_REGEN_MAX_RETRY,
-	DEVCONF_MAX_DESYNC_FACTOR,
-	DEVCONF_MAX_ADDRESSES,
-	DEVCONF_FORCE_MLD_VERSION,
-	DEVCONF_ACCEPT_RA_DEFRTR,
-	DEVCONF_ACCEPT_RA_PINFO,
-	DEVCONF_ACCEPT_RA_RTR_PREF,
-	DEVCONF_RTR_PROBE_INTERVAL,
-	DEVCONF_ACCEPT_RA_RT_INFO_MAX_PLEN,
-	DEVCONF_PROXY_NDP,
-	DEVCONF_OPTIMISTIC_DAD,
-	DEVCONF_ACCEPT_SOURCE_ROUTE,
-	DEVCONF_MC_FORWARDING,
-	DEVCONF_DISABLE_IPV6,
-	DEVCONF_ACCEPT_DAD,
-	DEVCONF_FORCE_TLLAO,
-	DEVCONF_NDISC_NOTIFY,
-	DEVCONF_MLDV1_UNSOLICITED_REPORT_INTERVAL,
-	DEVCONF_MLDV2_UNSOLICITED_REPORT_INTERVAL,
-	DEVCONF_SUPPRESS_FRAG_NDISC,
-	DEVCONF_ACCEPT_RA_FROM_LOCAL,
-	DEVCONF_USE_OPTIMISTIC,
-	DEVCONF_ACCEPT_RA_MTU,
-	DEVCONF_STABLE_SECRET,
-	DEVCONF_USE_OIF_ADDRS_ONLY,
-	DEVCONF_ACCEPT_RA_MIN_HOP_LIMIT,
-	DEVCONF_IGNORE_ROUTES_WITH_LINKDOWN,
-	DEVCONF_DROP_UNICAST_IN_L2_MULTICAST,
-	DEVCONF_DROP_UNSOLICITED_NA,
-	DEVCONF_KEEP_ADDR_ON_DOWN,
-	DEVCONF_RTR_SOLICIT_MAX_INTERVAL,
-	DEVCONF_SEG6_ENABLED,
-	DEVCONF_SEG6_REQUIRE_HMAC,
-	DEVCONF_ENHANCED_DAD,
-	DEVCONF_ADDR_GEN_MODE,
-	DEVCONF_DISABLE_POLICY,
-	DEVCONF_ACCEPT_RA_RT_INFO_MIN_PLEN,
-	DEVCONF_NDISC_TCLASS,
-	DEVCONF_RPL_SEG_ENABLED,
-	DEVCONF_RA_DEFRTR_METRIC,
-	DEVCONF_IOAM6_ENABLED,
-	DEVCONF_IOAM6_ID,
-	DEVCONF_IOAM6_ID_WIDE,
-	DEVCONF_NDISC_EVICT_NOCARRIER,
-	DEVCONF_ACCEPT_UNTRACKED_NA,
-	DEVCONF_ACCEPT_RA_MIN_LFT,
-	DEVCONF_MAX
+/* WARNING: don't change the layout of the members in {raw,udp,tcp}6_sock! */
+struct raw6_sock {
+	/* inet_sock has to be the first member of raw6_sock */
+	struct inet_sock	inet;
+	__u32			checksum;	/* perform checksum */
+	__u32			offset;		/* checksum offset  */
+	struct icmp6_filter	filter;
+	__u32			ip6mr_table;
+	/* ipv6_pinfo has to be the last member of raw6_sock, see inet6_sk_generic */
+	struct ipv6_pinfo	inet6;
 };
 
+struct udp6_sock {
+	struct udp_sock	  udp;
+	/* ipv6_pinfo has to be the last member of udp6_sock, see inet6_sk_generic */
+	struct ipv6_pinfo inet6;
+};
 
+struct tcp6_sock {
+	struct tcp_sock	  tcp;
+	/* ipv6_pinfo has to be the last member of tcp6_sock, see inet6_sk_generic */
+	struct ipv6_pinfo inet6;
+};
+
+extern int inet6_sk_rebuild_header(struct sock *sk);
+
+struct tcp6_timewait_sock {
+	struct tcp_timewait_sock   tcp6tw_tcp;
+};
+
+#if IS_ENABLED(CONFIG_IPV6)
+bool ipv6_mod_enabled(void);
+
+static inline struct ipv6_pinfo *inet6_sk(const struct sock *__sk)
+{
+	return sk_fullsock(__sk) ? inet_sk(__sk)->pinet6 : NULL;
+}
+
+static inline struct raw6_sock *raw6_sk(const struct sock *sk)
+{
+	return (struct raw6_sock *)sk;
+}
+
+static inline void inet_sk_copy_descendant(struct sock *sk_to,
+					   const struct sock *sk_from)
+{
+	int ancestor_size = sizeof(struct inet_sock);
+
+	if (sk_from->sk_family == PF_INET6)
+		ancestor_size += sizeof(struct ipv6_pinfo);
+
+	__inet_sk_copy_descendant(sk_to, sk_from, ancestor_size);
+}
+
+#define __ipv6_only_sock(sk)	(sk->sk_ipv6only)
+#define ipv6_only_sock(sk)	(__ipv6_only_sock(sk))
+#define ipv6_sk_rxinfo(sk)	((sk)->sk_family == PF_INET6 && \
+				 inet6_sk(sk)->rxopt.bits.rxinfo)
+
+static inline const struct in6_addr *inet6_rcv_saddr(const struct sock *sk)
+{
+	if (sk->sk_family == AF_INET6)
+		return &sk->sk_v6_rcv_saddr;
+	return NULL;
+}
+
+static inline int inet_v6_ipv6only(const struct sock *sk)
+{
+	/* ipv6only field is at same position for timewait and other sockets */
+	return ipv6_only_sock(sk);
+}
+#else
+#define __ipv6_only_sock(sk)	0
+#define ipv6_only_sock(sk)	0
+#define ipv6_sk_rxinfo(sk)	0
+
+static inline bool ipv6_mod_enabled(void)
+{
+	return false;
+}
+
+static inline struct ipv6_pinfo * inet6_sk(const struct sock *__sk)
+{
+	return NULL;
+}
+
+static inline struct inet6_request_sock *
+			inet6_rsk(const struct request_sock *rsk)
+{
+	return NULL;
+}
+
+static inline struct raw6_sock *raw6_sk(const struct sock *sk)
+{
+	return NULL;
+}
+
+#define inet6_rcv_saddr(__sk)	NULL
+#define tcp_twsk_ipv6only(__sk)		0
+#define inet_v6_ipv6only(__sk)		0
+#endif /* IS_ENABLED(CONFIG_IPV6) */
 #endif /* _IPV6_H */

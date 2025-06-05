@@ -1,72 +1,83 @@
-/* SPDX-License-Identifier: GPL-2.0+ WITH Linux-syscall-note */
-#ifndef _LINUX_FSI_H
-#define _LINUX_FSI_H
-
-#include <linux/types.h>
-#include <linux/ioctl.h>
-
-/*
- * /dev/scom "raw" ioctl interface
+/* FSI device & driver interfaces
  *
- * The driver supports a high level "read/write" interface which
- * handles retries and converts the status to Linux error codes,
- * however low level tools an debugger need to access the "raw"
- * HW status information and interpret it themselves, so this
- * ioctl interface is also provided for their use case.
+ * Copyright (C) IBM Corporation 2016
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  */
 
-/* Structure for SCOM read/write */
-struct scom_access {
-	__u64	addr;		/* SCOM address, supports indirect */
-	__u64	data;		/* SCOM data (in for write, out for read) */
-	__u64	mask;		/* Data mask for writes */
-	__u32	intf_errors;	/* Interface error flags */
-#define SCOM_INTF_ERR_PARITY		0x00000001 /* Parity error */
-#define SCOM_INTF_ERR_PROTECTION	0x00000002 /* Blocked by secure boot */
-#define SCOM_INTF_ERR_ABORT		0x00000004 /* PIB reset during access */
-#define SCOM_INTF_ERR_UNKNOWN		0x80000000 /* Unknown error */
-	/*
-	 * Note: Any other bit set in intf_errors need to be considered as an
-	 * error. Future implementations may define new error conditions. The
-	 * pib_status below is only valid if intf_errors is 0.
-	 */
-	__u8	pib_status;	/* 3-bit PIB status */
-#define SCOM_PIB_SUCCESS	0	/* Access successful */
-#define SCOM_PIB_BLOCKED	1	/* PIB blocked, pls retry */
-#define SCOM_PIB_OFFLINE	2	/* Chiplet offline */
-#define SCOM_PIB_PARTIAL	3	/* Partial good */
-#define SCOM_PIB_BAD_ADDR	4	/* Invalid address */
-#define SCOM_PIB_CLK_ERR	5	/* Clock error */
-#define SCOM_PIB_PARITY_ERR	6	/* Parity error on the PIB bus */
-#define SCOM_PIB_TIMEOUT	7	/* Bus timeout */
-	__u8	pad;
+#ifndef LINUX_FSI_H
+#define LINUX_FSI_H
+
+#include <linux/device.h>
+
+struct fsi_device {
+	struct device		dev;
+	u8			engine_type;
+	u8			version;
+	u8			unit;
+	struct fsi_slave	*slave;
+	uint32_t		addr;
+	uint32_t		size;
 };
 
-/* Flags for SCOM check */
-#define SCOM_CHECK_SUPPORTED	0x00000001	/* Interface supported */
-#define SCOM_CHECK_PROTECTED	0x00000002	/* Interface blocked by secure boot */
+extern int fsi_device_read(struct fsi_device *dev, uint32_t addr,
+		void *val, size_t size);
+extern int fsi_device_write(struct fsi_device *dev, uint32_t addr,
+		const void *val, size_t size);
+extern int fsi_device_peek(struct fsi_device *dev, void *val);
 
-/* Flags for SCOM reset */
-#define SCOM_RESET_INTF		0x00000001	/* Reset interface */
-#define SCOM_RESET_PIB		0x00000002	/* Reset PIB */
+struct fsi_device_id {
+	u8	engine_type;
+	u8	version;
+};
 
-#define FSI_SCOM_CHECK	_IOR('s', 0x00, __u32)
-#define FSI_SCOM_READ	_IOWR('s', 0x01, struct scom_access)
-#define FSI_SCOM_WRITE	_IOWR('s', 0x02, struct scom_access)
-#define FSI_SCOM_RESET	_IOW('s', 0x03, __u32)
+#define FSI_VERSION_ANY		0
 
-/*
- * /dev/sbefifo* ioctl interface
+#define FSI_DEVICE(t) \
+	.engine_type = (t), .version = FSI_VERSION_ANY,
+
+#define FSI_DEVICE_VERSIONED(t, v) \
+	.engine_type = (t), .version = (v),
+
+struct fsi_driver {
+	struct device_driver		drv;
+	const struct fsi_device_id	*id_table;
+};
+
+#define to_fsi_dev(devp) container_of(devp, struct fsi_device, dev)
+#define to_fsi_drv(drvp) container_of(drvp, struct fsi_driver, drv)
+
+extern int fsi_driver_register(struct fsi_driver *fsi_drv);
+extern void fsi_driver_unregister(struct fsi_driver *fsi_drv);
+
+/* module_fsi_driver() - Helper macro for drivers that don't do
+ * anything special in module init/exit.  This eliminates a lot of
+ * boilerplate.  Each module may only use this macro once, and
+ * calling it replaces module_init() and module_exit()
  */
+#define module_fsi_driver(__fsi_driver) \
+		module_driver(__fsi_driver, fsi_driver_register, \
+				fsi_driver_unregister)
 
-/**
- * FSI_SBEFIFO_READ_TIMEOUT sets the read timeout for response from SBE.
- *
- * The read timeout is specified in seconds.  The minimum value of read
- * timeout is 10 seconds (default) and the maximum value of read timeout is
- * 120 seconds.  A read timeout of 0 will reset the value to the default of
- * (10 seconds).
- */
-#define FSI_SBEFIFO_READ_TIMEOUT_SECONDS	_IOW('s', 0x00, __u32)
+/* direct slave API */
+extern int fsi_slave_claim_range(struct fsi_slave *slave,
+		uint32_t addr, uint32_t size);
+extern void fsi_slave_release_range(struct fsi_slave *slave,
+		uint32_t addr, uint32_t size);
+extern int fsi_slave_read(struct fsi_slave *slave, uint32_t addr,
+		void *val, size_t size);
+extern int fsi_slave_write(struct fsi_slave *slave, uint32_t addr,
+		const void *val, size_t size);
 
-#endif /* _LINUX_FSI_H */
+
+
+extern struct bus_type fsi_bus_type;
+
+#endif /* LINUX_FSI_H */

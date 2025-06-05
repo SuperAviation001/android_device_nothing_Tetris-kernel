@@ -1,82 +1,79 @@
-/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
+/* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _NFNETLINK_H
 #define _NFNETLINK_H
-#include <linux/types.h>
-#include <linux/netfilter/nfnetlink_compat.h>
 
-enum nfnetlink_groups {
-	NFNLGRP_NONE,
-#define NFNLGRP_NONE			NFNLGRP_NONE
-	NFNLGRP_CONNTRACK_NEW,
-#define NFNLGRP_CONNTRACK_NEW		NFNLGRP_CONNTRACK_NEW
-	NFNLGRP_CONNTRACK_UPDATE,
-#define NFNLGRP_CONNTRACK_UPDATE	NFNLGRP_CONNTRACK_UPDATE
-	NFNLGRP_CONNTRACK_DESTROY,
-#define NFNLGRP_CONNTRACK_DESTROY	NFNLGRP_CONNTRACK_DESTROY
-	NFNLGRP_CONNTRACK_EXP_NEW,
-#define	NFNLGRP_CONNTRACK_EXP_NEW	NFNLGRP_CONNTRACK_EXP_NEW
-	NFNLGRP_CONNTRACK_EXP_UPDATE,
-#define NFNLGRP_CONNTRACK_EXP_UPDATE	NFNLGRP_CONNTRACK_EXP_UPDATE
-	NFNLGRP_CONNTRACK_EXP_DESTROY,
-#define NFNLGRP_CONNTRACK_EXP_DESTROY	NFNLGRP_CONNTRACK_EXP_DESTROY
-	NFNLGRP_NFTABLES,
-#define NFNLGRP_NFTABLES                NFNLGRP_NFTABLES
-	NFNLGRP_ACCT_QUOTA,
-#define NFNLGRP_ACCT_QUOTA		NFNLGRP_ACCT_QUOTA
-	NFNLGRP_NFTRACE,
-#define NFNLGRP_NFTRACE			NFNLGRP_NFTRACE
-	__NFNLGRP_MAX,
-};
-#define NFNLGRP_MAX	(__NFNLGRP_MAX - 1)
+#include <linux/netlink.h>
+#include <linux/capability.h>
+#include <net/netlink.h>
+#include <uapi/linux/netfilter/nfnetlink.h>
 
-/* General form of address family dependent message.
- */
-struct nfgenmsg {
-	__u8  nfgen_family;		/* AF_xxx */
-	__u8  version;		/* nfnetlink version */
-	__be16    res_id;		/* resource id */
+struct nfnl_callback {
+	int (*call)(struct net *net, struct sock *nl, struct sk_buff *skb,
+		    const struct nlmsghdr *nlh,
+		    const struct nlattr * const cda[],
+		    struct netlink_ext_ack *extack);
+	int (*call_rcu)(struct net *net, struct sock *nl, struct sk_buff *skb,
+			const struct nlmsghdr *nlh,
+			const struct nlattr * const cda[],
+			struct netlink_ext_ack *extack);
+	int (*call_batch)(struct net *net, struct sock *nl, struct sk_buff *skb,
+			  const struct nlmsghdr *nlh,
+			  const struct nlattr * const cda[],
+			  struct netlink_ext_ack *extack);
+	const struct nla_policy *policy;	/* netlink attribute policy */
+	const u_int16_t attr_count;		/* number of nlattr's */
 };
 
-#define NFNETLINK_V0	0
+struct nfnetlink_subsystem {
+	const char *name;
+	__u8 subsys_id;			/* nfnetlink subsystem ID */
+	__u8 cb_count;			/* number of callbacks */
+	const struct nfnl_callback *cb;	/* callback for individual types */
+	int (*commit)(struct net *net, struct sk_buff *skb);
+	int (*abort)(struct net *net, struct sk_buff *skb);
+	bool (*valid_genid)(struct net *net, u32 genid);
+};
 
-/* netfilter netlink message types are split in two pieces:
- * 8 bit subsystem, 8bit operation.
- */
+int nfnetlink_subsys_register(const struct nfnetlink_subsystem *n);
+int nfnetlink_subsys_unregister(const struct nfnetlink_subsystem *n);
 
-#define NFNL_SUBSYS_ID(x)	((x & 0xff00) >> 8)
-#define NFNL_MSG_TYPE(x)	(x & 0x00ff)
+int nfnetlink_has_listeners(struct net *net, unsigned int group);
+int nfnetlink_send(struct sk_buff *skb, struct net *net, u32 portid,
+		   unsigned int group, int echo, gfp_t flags);
+int nfnetlink_set_err(struct net *net, u32 portid, u32 group, int error);
+int nfnetlink_unicast(struct sk_buff *skb, struct net *net, u32 portid,
+		      int flags);
 
-/* No enum here, otherwise __stringify() trick of MODULE_ALIAS_NFNL_SUBSYS()
- * won't work anymore */
-#define NFNL_SUBSYS_NONE 		0
-#define NFNL_SUBSYS_CTNETLINK		1
-#define NFNL_SUBSYS_CTNETLINK_EXP	2
-#define NFNL_SUBSYS_QUEUE		3
-#define NFNL_SUBSYS_ULOG		4
-#define NFNL_SUBSYS_OSF			5
-#define NFNL_SUBSYS_IPSET		6
-#define NFNL_SUBSYS_ACCT		7
-#define NFNL_SUBSYS_CTNETLINK_TIMEOUT	8
-#define NFNL_SUBSYS_CTHELPER		9
-#define NFNL_SUBSYS_NFTABLES		10
-#define NFNL_SUBSYS_NFT_COMPAT		11
-#define NFNL_SUBSYS_HOOK		12
-#define NFNL_SUBSYS_COUNT		13
+static inline u16 nfnl_msg_type(u8 subsys, u8 msg_type)
+{
+	return subsys << 8 | msg_type;
+}
 
-/* Reserved control nfnetlink messages */
-#define NFNL_MSG_BATCH_BEGIN		NLMSG_MIN_TYPE
-#define NFNL_MSG_BATCH_END		NLMSG_MIN_TYPE+1
+void nfnl_lock(__u8 subsys_id);
+void nfnl_unlock(__u8 subsys_id);
+#ifdef CONFIG_PROVE_LOCKING
+bool lockdep_nfnl_is_held(__u8 subsys_id);
+#else
+static inline bool lockdep_nfnl_is_held(__u8 subsys_id)
+{
+	return true;
+}
+#endif /* CONFIG_PROVE_LOCKING */
 
-/**
- * enum nfnl_batch_attributes - nfnetlink batch netlink attributes
+/*
+ * nfnl_dereference - fetch RCU pointer when updates are prevented by subsys mutex
  *
- * @NFNL_BATCH_GENID: generation ID for this changeset (NLA_U32)
+ * @p: The pointer to read, prior to dereferencing
+ * @ss: The nfnetlink subsystem ID
+ *
+ * Return the value of the specified RCU-protected pointer, but omit
+ * both the smp_read_barrier_depends() and the ACCESS_ONCE(), because
+ * caller holds the NFNL subsystem mutex.
  */
-enum nfnl_batch_attributes {
-        NFNL_BATCH_UNSPEC,
-        NFNL_BATCH_GENID,
-        __NFNL_BATCH_MAX
-};
-#define NFNL_BATCH_MAX			(__NFNL_BATCH_MAX - 1)
+#define nfnl_dereference(p, ss)					\
+	rcu_dereference_protected(p, lockdep_nfnl_is_held(ss))
 
-#endif /* _NFNETLINK_H */
+#define MODULE_ALIAS_NFNL_SUBSYS(subsys) \
+	MODULE_ALIAS("nfnetlink-subsys-" __stringify(subsys))
+
+#endif	/* _NFNETLINK_H */

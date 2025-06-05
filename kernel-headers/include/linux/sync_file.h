@@ -1,5 +1,6 @@
-/* SPDX-License-Identifier: GPL-1.0+ WITH Linux-syscall-note */
 /*
+ * include/linux/sync_file.h
+ *
  * Copyright (C) 2012 Google, Inc.
  *
  * This program is distributed in the hope that it will be useful,
@@ -9,90 +10,49 @@
  *
  */
 
-#ifndef _LINUX_SYNC_H
-#define _LINUX_SYNC_H
+#ifndef _LINUX_SYNC_FILE_H
+#define _LINUX_SYNC_FILE_H
 
-#include <linux/ioctl.h>
 #include <linux/types.h>
+#include <linux/ktime.h>
+#include <linux/list.h>
+#include <linux/spinlock.h>
+#include <linux/dma-fence.h>
+#include <linux/dma-fence-array.h>
 
 /**
- * struct sync_merge_data - data passed to merge ioctl
- * @name:	name of new fence
- * @fd2:	file descriptor of second fence
- * @fence:	returns the fd of the new fence to userspace
- * @flags:	merge_data flags
- * @pad:	padding for 64-bit alignment, should always be zero
+ * struct sync_file - sync file to export to the userspace
+ * @file:		file representing this fence
+ * @sync_file_list:	membership in global file list
+ * @wq:			wait queue for fence signaling
+ * @fence:		fence with the fences in the sync_file
+ * @cb:			fence callback information
  */
-struct sync_merge_data {
-	char	name[32];
-	__s32	fd2;
-	__s32	fence;
-	__u32	flags;
-	__u32	pad;
+struct sync_file {
+	struct file		*file;
+	/**
+	 * @user_name:
+	 *
+	 * Name of the sync file provided by userspace, for merged fences.
+	 * Otherwise generated through driver callbacks (in which case the
+	 * entire array is 0).
+	 */
+	char			user_name[32];
+#ifdef CONFIG_DEBUG_FS
+	struct list_head	sync_file_list;
+#endif
+
+	wait_queue_head_t	wq;
+	unsigned long		flags;
+
+	struct dma_fence	*fence;
+	struct dma_fence_cb cb;
 };
 
-/**
- * struct sync_fence_info - detailed fence information
- * @obj_name:		name of parent sync_timeline
-* @driver_name:	name of driver implementing the parent
-* @status:		status of the fence 0:active 1:signaled <0:error
- * @flags:		fence_info flags
- * @timestamp_ns:	timestamp of status change in nanoseconds
- */
-struct sync_fence_info {
-	char	obj_name[32];
-	char	driver_name[32];
-	__s32	status;
-	__u32	flags;
-	__u64	timestamp_ns;
-};
+#define POLL_ENABLED 0
 
-/**
- * struct sync_file_info - data returned from fence info ioctl
- * @name:	name of fence
- * @status:	status of fence. 1: signaled 0:active <0:error
- * @flags:	sync_file_info flags
- * @num_fences:	number of fences in the sync_file
- * @pad:	padding for 64-bit alignment, should always be zero
- * @sync_fence_info: pointer to array of structs sync_fence_info with all
- *		 fences in the sync_file
- */
-struct sync_file_info {
-	char	name[32];
-	__s32	status;
-	__u32	flags;
-	__u32	num_fences;
-	__u32	pad;
-
-	__u64	sync_fence_info;
-};
-
-#define SYNC_IOC_MAGIC		'>'
-
-/**
- * Opcodes  0, 1 and 2 were burned during a API change to avoid users of the
- * old API to get weird errors when trying to handling sync_files. The API
- * change happened during the de-stage of the Sync Framework when there was
- * no upstream users available.
- */
-
-/**
- * DOC: SYNC_IOC_MERGE - merge two fences
- *
- * Takes a struct sync_merge_data.  Creates a new fence containing copies of
- * the sync_pts in both the calling fd and sync_merge_data.fd2.  Returns the
- * new fence's fd in sync_merge_data.fence
- */
-#define SYNC_IOC_MERGE		_IOWR(SYNC_IOC_MAGIC, 3, struct sync_merge_data)
-
-/**
- * DOC: SYNC_IOC_FILE_INFO - get detailed information on a sync_file
- *
- * Takes a struct sync_file_info. If num_fences is 0, the field is updated
- * with the actual number of fences. If num_fences is > 0, the system will
- * use the pointer provided on sync_fence_info to return up to num_fences of
- * struct sync_fence_info, with detailed fence information.
- */
-#define SYNC_IOC_FILE_INFO	_IOWR(SYNC_IOC_MAGIC, 4, struct sync_file_info)
+struct sync_file *sync_file_create(struct dma_fence *fence);
+struct dma_fence *sync_file_get_fence(int fd);
+char *sync_file_get_name(struct sync_file *sync_file, char *buf, int len);
 
 #endif /* _LINUX_SYNC_H */

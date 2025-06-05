@@ -1,47 +1,31 @@
-/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
+/* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _LINUX_STDDEF_H
 #define _LINUX_STDDEF_H
 
+#include <uapi/linux/stddef.h>
 
+#undef NULL
+#define NULL ((void *)0)
 
-#ifndef __always_inline
-#define __always_inline __inline__
+enum {
+	false	= 0,
+	true	= 1
+};
+
+#undef offsetof
+#ifdef __compiler_offsetof
+#define offsetof(TYPE, MEMBER)	__compiler_offsetof(TYPE, MEMBER)
+#else
+#define offsetof(TYPE, MEMBER)	((size_t)&((TYPE *)0)->MEMBER)
 #endif
 
 /**
- * __struct_group() - Create a mirrored named and anonyomous struct
+ * offsetofend(TYPE, MEMBER)
  *
- * @TAG: The tag name for the named sub-struct (usually empty)
- * @NAME: The identifier name of the mirrored sub-struct
- * @ATTRS: Any struct attributes (usually empty)
- * @MEMBERS: The member declarations for the mirrored structs
- *
- * Used to create an anonymous union of two structs with identical layout
- * and size: one anonymous and one named. The former's members can be used
- * normally without sub-struct naming, and the latter can be used to
- * reason about the start, end, and size of the group of struct members.
- * The named struct can also be explicitly tagged for layer reuse, as well
- * as both having struct attributes appended.
+ * @TYPE: The type of the structure
+ * @MEMBER: The member within the structure to get the end offset of
  */
-#define __struct_group(TAG, NAME, ATTRS, MEMBERS...) \
-	union { \
-		struct { MEMBERS } ATTRS; \
-		struct TAG { MEMBERS } ATTRS NAME; \
-	} ATTRS
+#define offsetofend(TYPE, MEMBER) \
+	(offsetof(TYPE, MEMBER)	+ sizeof(((TYPE *)0)->MEMBER))
 
-/**
- * __DECLARE_FLEX_ARRAY() - Declare a flexible array usable in a union
- *
- * @TYPE: The type of each flexible array element
- * @NAME: The name of the flexible array member
- *
- * In order to have a flexible array member in a union or alone in a
- * struct, it needs to be wrapped in an anonymous struct with at least 1
- * named member, but that member can be empty.
- */
-#define __DECLARE_FLEX_ARRAY(TYPE, NAME)	\
-	struct { \
-		struct { } __empty_ ## NAME; \
-		TYPE NAME[]; \
-	}
 #endif

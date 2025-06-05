@@ -1,14 +1,14 @@
-/* SPDX-License-Identifier: GPL-2.0+ WITH Linux-syscall-note */
-/* SCTP kernel implementation
+/* SCTP kernel reference Implementation
  * (C) Copyright IBM Corp. 2001, 2004
  * Copyright (c) 1999-2000 Cisco, Inc.
  * Copyright (c) 1999-2001 Motorola, Inc.
- * Copyright (c) 2002 Intel Corp.
+ * Copyright (c) 2001 Intel Corp.
+ * Copyright (c) 2001 Nokia, Inc.
+ * Copyright (c) 2001 La Monte H.P. Yarroll
  *
- * This file is part of the SCTP kernel implementation
+ * This file is part of the SCTP kernel reference Implementation
  *
- * This header represents the structures and constants needed to support
- * the SCTP Extension to the Sockets API.
+ * Various protocol defined structures.
  *
  * This SCTP implementation is free software;
  * you can redistribute it and/or modify it under the terms of
@@ -34,1185 +34,734 @@
  *    http://www.sf.net/projects/lksctp
  *
  * Written or modified by:
- *    La Monte H.P. Yarroll    <piggy@acm.org>
- *    R. Stewart               <randall@sctp.chicago.il.us>
- *    K. Morneau               <kmorneau@cisco.com>
- *    Q. Xie                   <qxie1@email.mot.com>
- *    Karl Knutson             <karl@athena.chicago.il.us>
- *    Jon Grimm                <jgrimm@us.ibm.com>
- *    Daisy Chang              <daisyc@us.ibm.com>
- *    Ryan Layer               <rmlayer@us.ibm.com>
- *    Ardelle Fan              <ardelle.fan@intel.com>
- *    Sridhar Samudrala        <sri@us.ibm.com>
- *    Inaky Perez-Gonzalez     <inaky.gonzalez@intel.com>
- *    Vlad Yasevich            <vladislav.yasevich@hp.com>
+ *    La Monte H.P. Yarroll <piggy@acm.org>
+ *    Karl Knutson <karl@athena.chicago.il.us>
+ *    Jon Grimm <jgrimm@us.ibm.com>
+ *    Xingang Guo <xingang.guo@intel.com>
+ *    randall@sctp.chicago.il.us
+ *    kmorneau@cisco.com
+ *    qxie1@email.mot.com
+ *    Sridhar Samudrala <sri@us.ibm.com>
+ *    Kevin Gao <kevin.gao@intel.com>
  *
  * Any bugs reported given to us we will try to fix... any fixes shared will
  * be incorporated into the next SCTP release.
  */
+#ifndef __LINUX_SCTP_H__
+#define __LINUX_SCTP_H__
 
-#ifndef _SCTP_H
-#define _SCTP_H
+#include <linux/in.h>		/* We need in_addr.  */
+#include <linux/in6.h>		/* We need in6_addr.  */
+#include <linux/skbuff.h>
 
-#include <linux/types.h>
-#include <linux/socket.h>
+#include <uapi/linux/sctp.h>
 
-typedef __s32 sctp_assoc_t;
-
-#define SCTP_FUTURE_ASSOC	0
-#define SCTP_CURRENT_ASSOC	1
-#define SCTP_ALL_ASSOC		2
-
-/* The following symbols come from the Sockets API Extensions for
- * SCTP <draft-ietf-tsvwg-sctpsocket-07.txt>.
- */
-#define SCTP_RTOINFO	0
-#define SCTP_ASSOCINFO  1
-#define SCTP_INITMSG	2
-#define SCTP_NODELAY	3		/* Get/set nodelay option. */
-#define SCTP_AUTOCLOSE	4
-#define SCTP_SET_PEER_PRIMARY_ADDR 5
-#define SCTP_PRIMARY_ADDR	6
-#define SCTP_ADAPTATION_LAYER	7
-#define SCTP_DISABLE_FRAGMENTS	8
-#define SCTP_PEER_ADDR_PARAMS	9
-#define SCTP_DEFAULT_SEND_PARAM	10
-#define SCTP_EVENTS	11
-#define SCTP_I_WANT_MAPPED_V4_ADDR 12	/* Turn on/off mapped v4 addresses  */
-#define SCTP_MAXSEG	13		/* Get/set maximum fragment. */
-#define SCTP_STATUS	14
-#define SCTP_GET_PEER_ADDR_INFO	15
-#define SCTP_DELAYED_ACK_TIME	16
-#define SCTP_DELAYED_ACK SCTP_DELAYED_ACK_TIME
-#define SCTP_DELAYED_SACK SCTP_DELAYED_ACK_TIME
-#define SCTP_CONTEXT	17
-#define SCTP_FRAGMENT_INTERLEAVE	18
-#define SCTP_PARTIAL_DELIVERY_POINT	19 /* Set/Get partial delivery point */
-#define SCTP_MAX_BURST	20		/* Set/Get max burst */
-#define SCTP_AUTH_CHUNK	21	/* Set only: add a chunk type to authenticate */
-#define SCTP_HMAC_IDENT	22
-#define SCTP_AUTH_KEY	23
-#define SCTP_AUTH_ACTIVE_KEY	24
-#define SCTP_AUTH_DELETE_KEY	25
-#define SCTP_PEER_AUTH_CHUNKS	26	/* Read only */
-#define SCTP_LOCAL_AUTH_CHUNKS	27	/* Read only */
-#define SCTP_GET_ASSOC_NUMBER	28	/* Read only */
-#define SCTP_GET_ASSOC_ID_LIST	29	/* Read only */
-#define SCTP_AUTO_ASCONF       30
-#define SCTP_PEER_ADDR_THLDS	31
-#define SCTP_RECVRCVINFO	32
-#define SCTP_RECVNXTINFO	33
-#define SCTP_DEFAULT_SNDINFO	34
-#define SCTP_AUTH_DEACTIVATE_KEY	35
-#define SCTP_REUSE_PORT		36
-#define SCTP_PEER_ADDR_THLDS_V2	37
-
-/* Internal Socket Options. Some of the sctp library functions are
- * implemented using these socket options.
- */
-#define SCTP_SOCKOPT_BINDX_ADD	100	/* BINDX requests for adding addrs */
-#define SCTP_SOCKOPT_BINDX_REM	101	/* BINDX requests for removing addrs. */
-#define SCTP_SOCKOPT_PEELOFF	102	/* peel off association. */
-/* Options 104-106 are deprecated and removed. Do not use this space */
-#define SCTP_SOCKOPT_CONNECTX_OLD	107	/* CONNECTX old requests. */
-#define SCTP_GET_PEER_ADDRS	108		/* Get all peer address. */
-#define SCTP_GET_LOCAL_ADDRS	109		/* Get all local address. */
-#define SCTP_SOCKOPT_CONNECTX	110		/* CONNECTX requests. */
-#define SCTP_SOCKOPT_CONNECTX3	111	/* CONNECTX requests (updated) */
-#define SCTP_GET_ASSOC_STATS	112	/* Read only */
-#define SCTP_PR_SUPPORTED	113
-#define SCTP_DEFAULT_PRINFO	114
-#define SCTP_PR_ASSOC_STATUS	115
-#define SCTP_PR_STREAM_STATUS	116
-#define SCTP_RECONFIG_SUPPORTED	117
-#define SCTP_ENABLE_STREAM_RESET	118
-#define SCTP_RESET_STREAMS	119
-#define SCTP_RESET_ASSOC	120
-#define SCTP_ADD_STREAMS	121
-#define SCTP_SOCKOPT_PEELOFF_FLAGS 122
-#define SCTP_STREAM_SCHEDULER	123
-#define SCTP_STREAM_SCHEDULER_VALUE	124
-#define SCTP_INTERLEAVING_SUPPORTED	125
-#define SCTP_SENDMSG_CONNECT	126
-#define SCTP_EVENT	127
-#define SCTP_ASCONF_SUPPORTED	128
-#define SCTP_AUTH_SUPPORTED	129
-#define SCTP_ECN_SUPPORTED	130
-#define SCTP_EXPOSE_POTENTIALLY_FAILED_STATE	131
-#define SCTP_EXPOSE_PF_STATE	SCTP_EXPOSE_POTENTIALLY_FAILED_STATE
-#define SCTP_REMOTE_UDP_ENCAPS_PORT	132
-#define SCTP_PLPMTUD_PROBE_INTERVAL	133
-
-/* PR-SCTP policies */
-#define SCTP_PR_SCTP_NONE	0x0000
-#define SCTP_PR_SCTP_TTL	0x0010
-#define SCTP_PR_SCTP_RTX	0x0020
-#define SCTP_PR_SCTP_PRIO	0x0030
-#define SCTP_PR_SCTP_MAX	SCTP_PR_SCTP_PRIO
-#define SCTP_PR_SCTP_MASK	0x0030
-
-#define __SCTP_PR_INDEX(x)	((x >> 4) - 1)
-#define SCTP_PR_INDEX(x)	__SCTP_PR_INDEX(SCTP_PR_SCTP_ ## x)
-
-#define SCTP_PR_POLICY(x)	((x) & SCTP_PR_SCTP_MASK)
-#define SCTP_PR_SET_POLICY(flags, x)	\
-	do {				\
-		flags &= ~SCTP_PR_SCTP_MASK;	\
-		flags |= x;		\
-	} while (0)
-
-#define SCTP_PR_TTL_ENABLED(x)	(SCTP_PR_POLICY(x) == SCTP_PR_SCTP_TTL)
-#define SCTP_PR_RTX_ENABLED(x)	(SCTP_PR_POLICY(x) == SCTP_PR_SCTP_RTX)
-#define SCTP_PR_PRIO_ENABLED(x)	(SCTP_PR_POLICY(x) == SCTP_PR_SCTP_PRIO)
-
-/* For enable stream reset */
-#define SCTP_ENABLE_RESET_STREAM_REQ	0x01
-#define SCTP_ENABLE_RESET_ASSOC_REQ	0x02
-#define SCTP_ENABLE_CHANGE_ASSOC_REQ	0x04
-#define SCTP_ENABLE_STRRESET_MASK	0x07
-
-#define SCTP_STREAM_RESET_INCOMING	0x01
-#define SCTP_STREAM_RESET_OUTGOING	0x02
-
-/* These are bit fields for msghdr->msg_flags.  See section 5.1.  */
-/* On user space Linux, these live in <bits/socket.h> as an enum.  */
-enum sctp_msg_flags {
-	MSG_NOTIFICATION = 0x8000,
-#define MSG_NOTIFICATION MSG_NOTIFICATION
+/* Section 3.1.  SCTP Common Header Format */
+struct sctphdr {
+	__be16 source;
+	__be16 dest;
+	__be32 vtag;
+	__le32 checksum;
 };
 
-/* 5.3.1 SCTP Initiation Structure (SCTP_INIT)
- *
- *   This cmsghdr structure provides information for initializing new
- *   SCTP associations with sendmsg().  The SCTP_INITMSG socket option
- *   uses this same data structure.  This structure is not used for
- *   recvmsg().
- *
- *   cmsg_level    cmsg_type      cmsg_data[]
- *   ------------  ------------   ----------------------
- *   IPPROTO_SCTP  SCTP_INIT      struct sctp_initmsg
- */
-struct sctp_initmsg {
-	__u16 sinit_num_ostreams;
-	__u16 sinit_max_instreams;
-	__u16 sinit_max_attempts;
-	__u16 sinit_max_init_timeo;
+static inline struct sctphdr *sctp_hdr(const struct sk_buff *skb)
+{
+	return (struct sctphdr *)skb_transport_header(skb);
+}
+
+/* Section 3.2.  Chunk Field Descriptions. */
+struct sctp_chunkhdr {
+	__u8 type;
+	__u8 flags;
+	__be16 length;
 };
 
-/* 5.3.2 SCTP Header Information Structure (SCTP_SNDRCV)
- *
- *   This cmsghdr structure specifies SCTP options for sendmsg() and
- *   describes SCTP header information about a received message through
- *   recvmsg().
- *
- *   cmsg_level    cmsg_type      cmsg_data[]
- *   ------------  ------------   ----------------------
- *   IPPROTO_SCTP  SCTP_SNDRCV    struct sctp_sndrcvinfo
+
+/* Section 3.2.  Chunk Type Values.
+ * [Chunk Type] identifies the type of information contained in the Chunk
+ * Value field. It takes a value from 0 to 254. The value of 255 is
+ * reserved for future use as an extension field.
  */
-struct sctp_sndrcvinfo {
-	__u16 sinfo_stream;
-	__u16 sinfo_ssn;
-	__u16 sinfo_flags;
-	__u32 sinfo_ppid;
-	__u32 sinfo_context;
-	__u32 sinfo_timetolive;
-	__u32 sinfo_tsn;
-	__u32 sinfo_cumtsn;
-	sctp_assoc_t sinfo_assoc_id;
+enum sctp_cid {
+	SCTP_CID_DATA			= 0,
+        SCTP_CID_INIT			= 1,
+        SCTP_CID_INIT_ACK		= 2,
+        SCTP_CID_SACK			= 3,
+        SCTP_CID_HEARTBEAT		= 4,
+        SCTP_CID_HEARTBEAT_ACK		= 5,
+        SCTP_CID_ABORT			= 6,
+        SCTP_CID_SHUTDOWN		= 7,
+        SCTP_CID_SHUTDOWN_ACK		= 8,
+        SCTP_CID_ERROR			= 9,
+        SCTP_CID_COOKIE_ECHO		= 10,
+        SCTP_CID_COOKIE_ACK	        = 11,
+        SCTP_CID_ECN_ECNE		= 12,
+        SCTP_CID_ECN_CWR		= 13,
+        SCTP_CID_SHUTDOWN_COMPLETE	= 14,
+
+	/* AUTH Extension Section 4.1 */
+	SCTP_CID_AUTH			= 0x0F,
+
+	/* PR-SCTP Sec 3.2 */
+	SCTP_CID_FWD_TSN		= 0xC0,
+
+	/* Use hex, as defined in ADDIP sec. 3.1 */
+	SCTP_CID_ASCONF			= 0xC1,
+	SCTP_CID_ASCONF_ACK		= 0x80,
+	SCTP_CID_RECONF			= 0x82,
+}; /* enum */
+
+
+/* Section 3.2
+ *  Chunk Types are encoded such that the highest-order two bits specify
+ *  the action that must be taken if the processing endpoint does not
+ *  recognize the Chunk Type.
+ */
+enum {
+	SCTP_CID_ACTION_DISCARD     = 0x00,
+	SCTP_CID_ACTION_DISCARD_ERR = 0x40,
+	SCTP_CID_ACTION_SKIP        = 0x80,
+	SCTP_CID_ACTION_SKIP_ERR    = 0xc0,
 };
 
-/* 5.3.4 SCTP Send Information Structure (SCTP_SNDINFO)
- *
- *   This cmsghdr structure specifies SCTP options for sendmsg().
- *
- *   cmsg_level    cmsg_type      cmsg_data[]
- *   ------------  ------------   -------------------
- *   IPPROTO_SCTP  SCTP_SNDINFO   struct sctp_sndinfo
- */
-struct sctp_sndinfo {
-	__u16 snd_sid;
-	__u16 snd_flags;
-	__u32 snd_ppid;
-	__u32 snd_context;
-	sctp_assoc_t snd_assoc_id;
-};
+enum { SCTP_CID_ACTION_MASK = 0xc0, };
 
-/* 5.3.5 SCTP Receive Information Structure (SCTP_RCVINFO)
+/* This flag is used in Chunk Flags for ABORT and SHUTDOWN COMPLETE.
  *
- *   This cmsghdr structure describes SCTP receive information
- *   about a received message through recvmsg().
- *
- *   cmsg_level    cmsg_type      cmsg_data[]
- *   ------------  ------------   -------------------
- *   IPPROTO_SCTP  SCTP_RCVINFO   struct sctp_rcvinfo
+ * 3.3.7 Abort Association (ABORT) (6):
+ *    The T bit is set to 0 if the sender had a TCB that it destroyed.
+ *    If the sender did not have a TCB it should set this bit to 1.
  */
-struct sctp_rcvinfo {
-	__u16 rcv_sid;
-	__u16 rcv_ssn;
-	__u16 rcv_flags;
-	__u32 rcv_ppid;
-	__u32 rcv_tsn;
-	__u32 rcv_cumtsn;
-	__u32 rcv_context;
-	sctp_assoc_t rcv_assoc_id;
-};
-
-/* 5.3.6 SCTP Next Receive Information Structure (SCTP_NXTINFO)
- *
- *   This cmsghdr structure describes SCTP receive information
- *   of the next message that will be delivered through recvmsg()
- *   if this information is already available when delivering
- *   the current message.
- *
- *   cmsg_level    cmsg_type      cmsg_data[]
- *   ------------  ------------   -------------------
- *   IPPROTO_SCTP  SCTP_NXTINFO   struct sctp_nxtinfo
- */
-struct sctp_nxtinfo {
-	__u16 nxt_sid;
-	__u16 nxt_flags;
-	__u32 nxt_ppid;
-	__u32 nxt_length;
-	sctp_assoc_t nxt_assoc_id;
-};
-
-/* 5.3.7 SCTP PR-SCTP Information Structure (SCTP_PRINFO)
- *
- *   This cmsghdr structure specifies SCTP options for sendmsg().
- *
- *   cmsg_level    cmsg_type      cmsg_data[]
- *   ------------  ------------   -------------------
- *   IPPROTO_SCTP  SCTP_PRINFO    struct sctp_prinfo
- */
-struct sctp_prinfo {
-	__u16 pr_policy;
-	__u32 pr_value;
-};
-
-/* 5.3.8 SCTP AUTH Information Structure (SCTP_AUTHINFO)
- *
- *   This cmsghdr structure specifies SCTP options for sendmsg().
- *
- *   cmsg_level    cmsg_type      cmsg_data[]
- *   ------------  ------------   -------------------
- *   IPPROTO_SCTP  SCTP_AUTHINFO  struct sctp_authinfo
- */
-struct sctp_authinfo {
-	__u16 auth_keynumber;
-};
+enum { SCTP_CHUNK_FLAG_T = 0x01 };
 
 /*
- *  sinfo_flags: 16 bits (unsigned integer)
+ *  Set the T bit
  *
- *   This field may contain any of the following flags and is composed of
- *   a bitwise OR of these values.
+ *      0                   1                   2                   3
+ *      0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ *     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *     |   Type = 14   |Reserved     |T|      Length = 4               |
+ *     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *
+ * Chunk Flags: 8 bits
+ *
+ *   Reserved:  7 bits
+ *     Set to 0 on transmit and ignored on receipt.
+ *
+ *   T bit:  1 bit
+ *     The T bit is set to 0 if the sender had a TCB that it destroyed. If
+ *     the sender did NOT have a TCB it should set this bit to 1.
+ *
+ * Note: Special rules apply to this chunk for verification, please
+ * see Section 8.5.1 for details.
  */
-enum sctp_sinfo_flags {
-	SCTP_UNORDERED		= (1 << 0), /* Send/receive message unordered. */
-	SCTP_ADDR_OVER		= (1 << 1), /* Override the primary destination. */
-	SCTP_ABORT		= (1 << 2), /* Send an ABORT message to the peer. */
-	SCTP_SACK_IMMEDIATELY	= (1 << 3), /* SACK should be sent without delay. */
-	/* 2 bits here have been used by SCTP_PR_SCTP_MASK */
-	SCTP_SENDALL		= (1 << 6),
-	SCTP_PR_SCTP_ALL	= (1 << 7),
-	SCTP_NOTIFICATION	= MSG_NOTIFICATION, /* Next message is not user msg but notification. */
-	SCTP_EOF		= MSG_FIN,  /* Initiate graceful shutdown process. */
+
+#define sctp_test_T_bit(c)    ((c)->chunk_hdr->flags & SCTP_CHUNK_FLAG_T)
+
+/* RFC 2960
+ * Section 3.2.1 Optional/Variable-length Parmaeter Format.
+ */
+
+struct sctp_paramhdr {
+	__be16 type;
+	__be16 length;
 };
 
-typedef union {
-	__u8   			raw;
-	struct sctp_initmsg	init;
-	struct sctp_sndrcvinfo	sndrcv;
-} sctp_cmsg_data_t;
+enum sctp_param {
 
-/* These are cmsg_types.  */
-typedef enum sctp_cmsg_type {
-	SCTP_INIT,		/* 5.2.1 SCTP Initiation Structure */
-#define SCTP_INIT	SCTP_INIT
-	SCTP_SNDRCV,		/* 5.2.2 SCTP Header Information Structure */
-#define SCTP_SNDRCV	SCTP_SNDRCV
-	SCTP_SNDINFO,		/* 5.3.4 SCTP Send Information Structure */
-#define SCTP_SNDINFO	SCTP_SNDINFO
-	SCTP_RCVINFO,		/* 5.3.5 SCTP Receive Information Structure */
-#define SCTP_RCVINFO	SCTP_RCVINFO
-	SCTP_NXTINFO,		/* 5.3.6 SCTP Next Receive Information Structure */
-#define SCTP_NXTINFO	SCTP_NXTINFO
-	SCTP_PRINFO,		/* 5.3.7 SCTP PR-SCTP Information Structure */
-#define SCTP_PRINFO	SCTP_PRINFO
-	SCTP_AUTHINFO,		/* 5.3.8 SCTP AUTH Information Structure */
-#define SCTP_AUTHINFO	SCTP_AUTHINFO
-	SCTP_DSTADDRV4,		/* 5.3.9 SCTP Destination IPv4 Address Structure */
-#define SCTP_DSTADDRV4	SCTP_DSTADDRV4
-	SCTP_DSTADDRV6,		/* 5.3.10 SCTP Destination IPv6 Address Structure */
-#define SCTP_DSTADDRV6	SCTP_DSTADDRV6
-} sctp_cmsg_t;
+	/* RFC 2960 Section 3.3.5 */
+	SCTP_PARAM_HEARTBEAT_INFO		= cpu_to_be16(1),
+	/* RFC 2960 Section 3.3.2.1 */
+	SCTP_PARAM_IPV4_ADDRESS			= cpu_to_be16(5),
+	SCTP_PARAM_IPV6_ADDRESS			= cpu_to_be16(6),
+	SCTP_PARAM_STATE_COOKIE			= cpu_to_be16(7),
+	SCTP_PARAM_UNRECOGNIZED_PARAMETERS	= cpu_to_be16(8),
+	SCTP_PARAM_COOKIE_PRESERVATIVE		= cpu_to_be16(9),
+	SCTP_PARAM_HOST_NAME_ADDRESS		= cpu_to_be16(11),
+	SCTP_PARAM_SUPPORTED_ADDRESS_TYPES	= cpu_to_be16(12),
+	SCTP_PARAM_ECN_CAPABLE			= cpu_to_be16(0x8000),
 
-/*
- * 5.3.1.1 SCTP_ASSOC_CHANGE
- *
- *   Communication notifications inform the ULP that an SCTP association
- *   has either begun or ended. The identifier for a new association is
- *   provided by this notificaion. The notification information has the
- *   following format:
+	/* AUTH Extension Section 3 */
+	SCTP_PARAM_RANDOM			= cpu_to_be16(0x8002),
+	SCTP_PARAM_CHUNKS			= cpu_to_be16(0x8003),
+	SCTP_PARAM_HMAC_ALGO			= cpu_to_be16(0x8004),
+
+	/* Add-IP: Supported Extensions, Section 4.2 */
+	SCTP_PARAM_SUPPORTED_EXT	= cpu_to_be16(0x8008),
+
+	/* PR-SCTP Sec 3.1 */
+	SCTP_PARAM_FWD_TSN_SUPPORT	= cpu_to_be16(0xc000),
+
+	/* Add-IP Extension. Section 3.2 */
+	SCTP_PARAM_ADD_IP		= cpu_to_be16(0xc001),
+	SCTP_PARAM_DEL_IP		= cpu_to_be16(0xc002),
+	SCTP_PARAM_ERR_CAUSE		= cpu_to_be16(0xc003),
+	SCTP_PARAM_SET_PRIMARY		= cpu_to_be16(0xc004),
+	SCTP_PARAM_SUCCESS_REPORT	= cpu_to_be16(0xc005),
+	SCTP_PARAM_ADAPTATION_LAYER_IND = cpu_to_be16(0xc006),
+
+	/* RE-CONFIG. Section 4 */
+	SCTP_PARAM_RESET_OUT_REQUEST		= cpu_to_be16(0x000d),
+	SCTP_PARAM_RESET_IN_REQUEST		= cpu_to_be16(0x000e),
+	SCTP_PARAM_RESET_TSN_REQUEST		= cpu_to_be16(0x000f),
+	SCTP_PARAM_RESET_RESPONSE		= cpu_to_be16(0x0010),
+	SCTP_PARAM_RESET_ADD_OUT_STREAMS	= cpu_to_be16(0x0011),
+	SCTP_PARAM_RESET_ADD_IN_STREAMS		= cpu_to_be16(0x0012),
+}; /* enum */
+
+
+/* RFC 2960 Section 3.2.1
+ *  The Parameter Types are encoded such that the highest-order two bits
+ *  specify the action that must be taken if the processing endpoint does
+ *  not recognize the Parameter Type.
  *
  */
-struct sctp_assoc_change {
-	__u16 sac_type;
-	__u16 sac_flags;
-	__u32 sac_length;
-	__u16 sac_state;
-	__u16 sac_error;
-	__u16 sac_outbound_streams;
-	__u16 sac_inbound_streams;
-	sctp_assoc_t sac_assoc_id;
-	__u8 sac_info[];
+enum {
+	SCTP_PARAM_ACTION_DISCARD     = cpu_to_be16(0x0000),
+	SCTP_PARAM_ACTION_DISCARD_ERR = cpu_to_be16(0x4000),
+	SCTP_PARAM_ACTION_SKIP        = cpu_to_be16(0x8000),
+	SCTP_PARAM_ACTION_SKIP_ERR    = cpu_to_be16(0xc000),
 };
 
-/*
- *   sac_state: 32 bits (signed integer)
- *
- *   This field holds one of a number of values that communicate the
- *   event that happened to the association.  They include:
- *
- *   Note:  The following state names deviate from the API draft as
- *   the names clash too easily with other kernel symbols.
- */
-enum sctp_sac_state {
-	SCTP_COMM_UP,
-	SCTP_COMM_LOST,
-	SCTP_RESTART,
-	SCTP_SHUTDOWN_COMP,
-	SCTP_CANT_STR_ASSOC,
+enum { SCTP_PARAM_ACTION_MASK = cpu_to_be16(0xc000), };
+
+/* RFC 2960 Section 3.3.1 Payload Data (DATA) (0) */
+
+struct sctp_datahdr {
+	__be32 tsn;
+	__be16 stream;
+	__be16 ssn;
+	__u32 ppid;
+	__u8  payload[0];
 };
 
-/*
- * 5.3.1.2 SCTP_PEER_ADDR_CHANGE
- *
- *   When a destination address on a multi-homed peer encounters a change
- *   an interface details event is sent.  The information has the
- *   following structure:
- */
-struct sctp_paddr_change {
-	__u16 spc_type;
-	__u16 spc_flags;
-	__u32 spc_length;
-	struct sockaddr_storage spc_aaddr;
-	int spc_state;
-	int spc_error;
-	sctp_assoc_t spc_assoc_id;
-} __attribute__((packed, aligned(4)));
-
-/*
- *    spc_state:  32 bits (signed integer)
- *
- *   This field holds one of a number of values that communicate the
- *   event that happened to the address.  They include:
- */
-enum sctp_spc_state {
-	SCTP_ADDR_AVAILABLE,
-	SCTP_ADDR_UNREACHABLE,
-	SCTP_ADDR_REMOVED,
-	SCTP_ADDR_ADDED,
-	SCTP_ADDR_MADE_PRIM,
-	SCTP_ADDR_CONFIRMED,
-	SCTP_ADDR_POTENTIALLY_FAILED,
-#define SCTP_ADDR_PF	SCTP_ADDR_POTENTIALLY_FAILED
+struct sctp_data_chunk {
+	struct sctp_chunkhdr chunk_hdr;
+	struct sctp_datahdr data_hdr;
 };
+
+/* DATA Chuck Specific Flags */
+enum {
+	SCTP_DATA_MIDDLE_FRAG	= 0x00,
+	SCTP_DATA_LAST_FRAG	= 0x01,
+	SCTP_DATA_FIRST_FRAG	= 0x02,
+	SCTP_DATA_NOT_FRAG	= 0x03,
+	SCTP_DATA_UNORDERED	= 0x04,
+	SCTP_DATA_SACK_IMM	= 0x08,
+};
+enum { SCTP_DATA_FRAG_MASK = 0x03, };
+
+
+/* RFC 2960 Section 3.3.2 Initiation (INIT) (1)
+ *
+ *  This chunk is used to initiate a SCTP association between two
+ *  endpoints.
+ */
+struct sctp_inithdr {
+	__be32 init_tag;
+	__be32 a_rwnd;
+	__be16 num_outbound_streams;
+	__be16 num_inbound_streams;
+	__be32 initial_tsn;
+	__u8  params[0];
+};
+
+struct sctp_init_chunk {
+	struct sctp_chunkhdr chunk_hdr;
+	struct sctp_inithdr init_hdr;
+};
+
+
+/* Section 3.3.2.1. IPv4 Address Parameter (5) */
+struct sctp_ipv4addr_param {
+	struct sctp_paramhdr param_hdr;
+	struct in_addr addr;
+};
+
+/* Section 3.3.2.1. IPv6 Address Parameter (6) */
+struct sctp_ipv6addr_param {
+	struct sctp_paramhdr param_hdr;
+	struct in6_addr addr;
+};
+
+/* Section 3.3.2.1 Cookie Preservative (9) */
+struct sctp_cookie_preserve_param {
+	struct sctp_paramhdr param_hdr;
+	__be32 lifespan_increment;
+};
+
+/* Section 3.3.2.1 Host Name Address (11) */
+struct sctp_hostname_param {
+	struct sctp_paramhdr param_hdr;
+	uint8_t hostname[0];
+};
+
+/* Section 3.3.2.1 Supported Address Types (12) */
+struct sctp_supported_addrs_param {
+	struct sctp_paramhdr param_hdr;
+	__be16 types[0];
+};
+
+/* ADDIP Section 3.2.6 Adaptation Layer Indication */
+struct sctp_adaptation_ind_param {
+	struct sctp_paramhdr param_hdr;
+	__be32 adaptation_ind;
+};
+
+/* ADDIP Section 4.2.7 Supported Extensions Parameter */
+struct sctp_supported_ext_param {
+	struct sctp_paramhdr param_hdr;
+	__u8 chunks[0];
+};
+
+/* AUTH Section 3.1 Random */
+struct sctp_random_param {
+	struct sctp_paramhdr param_hdr;
+	__u8 random_val[0];
+};
+
+/* AUTH Section 3.2 Chunk List */
+struct sctp_chunks_param {
+	struct sctp_paramhdr param_hdr;
+	__u8 chunks[0];
+};
+
+/* AUTH Section 3.3 HMAC Algorithm */
+struct sctp_hmac_algo_param {
+	struct sctp_paramhdr param_hdr;
+	__be16 hmac_ids[0];
+};
+
+/* RFC 2960.  Section 3.3.3 Initiation Acknowledgement (INIT ACK) (2):
+ *   The INIT ACK chunk is used to acknowledge the initiation of an SCTP
+ *   association.
+ */
+struct sctp_initack_chunk {
+	struct sctp_chunkhdr chunk_hdr;
+	struct sctp_inithdr init_hdr;
+};
+
+/* Section 3.3.3.1 State Cookie (7) */
+struct sctp_cookie_param {
+	struct sctp_paramhdr p;
+	__u8 body[0];
+};
+
+/* Section 3.3.3.1 Unrecognized Parameters (8) */
+struct sctp_unrecognized_param {
+	struct sctp_paramhdr param_hdr;
+	struct sctp_paramhdr unrecognized;
+};
+
 
 
 /*
- * 5.3.1.3 SCTP_REMOTE_ERROR
+ * 3.3.4 Selective Acknowledgement (SACK) (3):
  *
- *   A remote peer may send an Operational Error message to its peer.
- *   This message indicates a variety of error conditions on an
- *   association. The entire error TLV as it appears on the wire is
- *   included in a SCTP_REMOTE_ERROR event.  Please refer to the SCTP
- *   specification [SCTP] and any extensions for a list of possible
- *   error formats. SCTP error TLVs have the format:
+ *  This chunk is sent to the peer endpoint to acknowledge received DATA
+ *  chunks and to inform the peer endpoint of gaps in the received
+ *  subsequences of DATA chunks as represented by their TSNs.
  */
-struct sctp_remote_error {
-	__u16 sre_type;
-	__u16 sre_flags;
-	__u32 sre_length;
-	__be16 sre_error;
-	sctp_assoc_t sre_assoc_id;
-	__u8 sre_data[];
+
+struct sctp_gap_ack_block {
+	__be16 start;
+	__be16 end;
+};
+
+union sctp_sack_variable {
+	struct sctp_gap_ack_block gab;
+	__be32 dup;
+};
+
+struct sctp_sackhdr {
+	__be32 cum_tsn_ack;
+	__be32 a_rwnd;
+	__be16 num_gap_ack_blocks;
+	__be16 num_dup_tsns;
+	union sctp_sack_variable variable[0];
+};
+
+struct sctp_sack_chunk {
+	struct sctp_chunkhdr chunk_hdr;
+	struct sctp_sackhdr sack_hdr;
 };
 
 
-/*
- * 5.3.1.4 SCTP_SEND_FAILED
+/* RFC 2960.  Section 3.3.5 Heartbeat Request (HEARTBEAT) (4):
  *
- *   If SCTP cannot deliver a message it may return the message as a
- *   notification.
+ *  An endpoint should send this chunk to its peer endpoint to probe the
+ *  reachability of a particular destination transport address defined in
+ *  the present association.
  */
-struct sctp_send_failed {
-	__u16 ssf_type;
-	__u16 ssf_flags;
-	__u32 ssf_length;
-	__u32 ssf_error;
-	struct sctp_sndrcvinfo ssf_info;
-	sctp_assoc_t ssf_assoc_id;
-	__u8 ssf_data[];
+
+struct sctp_heartbeathdr {
+	struct sctp_paramhdr info;
 };
 
-struct sctp_send_failed_event {
-	__u16 ssf_type;
-	__u16 ssf_flags;
-	__u32 ssf_length;
-	__u32 ssf_error;
-	struct sctp_sndinfo ssfe_info;
-	sctp_assoc_t ssf_assoc_id;
-	__u8 ssf_data[];
+struct sctp_heartbeat_chunk {
+	struct sctp_chunkhdr chunk_hdr;
+	struct sctp_heartbeathdr hb_hdr;
 };
 
-/*
- *   ssf_flags: 16 bits (unsigned integer)
- *
- *   The flag value will take one of the following values
- *
- *   SCTP_DATA_UNSENT  - Indicates that the data was never put on
- *                       the wire.
- *
- *   SCTP_DATA_SENT    - Indicates that the data was put on the wire.
- *                       Note that this does not necessarily mean that the
- *                       data was (or was not) successfully delivered.
+
+/* For the abort and shutdown ACK we must carry the init tag in the
+ * common header. Just the common header is all that is needed with a
+ * chunk descriptor.
  */
-enum sctp_ssf_flags {
-	SCTP_DATA_UNSENT,
-	SCTP_DATA_SENT,
+struct sctp_abort_chunk {
+	struct sctp_chunkhdr uh;
 };
 
-/*
- * 5.3.1.5 SCTP_SHUTDOWN_EVENT
- *
- *   When a peer sends a SHUTDOWN, SCTP delivers this notification to
- *   inform the application that it should cease sending data.
+
+/* For the graceful shutdown we must carry the tag (in common header)
+ * and the highest consecutive acking value.
  */
-struct sctp_shutdown_event {
-	__u16 sse_type;
-	__u16 sse_flags;
-	__u32 sse_length;
-	sctp_assoc_t sse_assoc_id;
+struct sctp_shutdownhdr {
+	__be32 cum_tsn_ack;
 };
 
-/*
- * 5.3.1.6 SCTP_ADAPTATION_INDICATION
- *
- *   When a peer sends a Adaptation Layer Indication parameter , SCTP
- *   delivers this notification to inform the application
- *   that of the peers requested adaptation layer.
- */
-struct sctp_adaptation_event {
-	__u16 sai_type;
-	__u16 sai_flags;
-	__u32 sai_length;
-	__u32 sai_adaptation_ind;
-	sctp_assoc_t sai_assoc_id;
+struct sctp_shutdown_chunk {
+	struct sctp_chunkhdr chunk_hdr;
+	struct sctp_shutdownhdr shutdown_hdr;
 };
 
-/*
- * 5.3.1.7 SCTP_PARTIAL_DELIVERY_EVENT
- *
- *   When a receiver is engaged in a partial delivery of a
- *   message this notification will be used to indicate
- *   various events.
- */
-struct sctp_pdapi_event {
-	__u16 pdapi_type;
-	__u16 pdapi_flags;
-	__u32 pdapi_length;
-	__u32 pdapi_indication;
-	sctp_assoc_t pdapi_assoc_id;
-	__u32 pdapi_stream;
-	__u32 pdapi_seq;
+/* RFC 2960.  Section 3.3.10 Operation Error (ERROR) (9) */
+
+struct sctp_errhdr {
+	__be16 cause;
+	__be16 length;
+	__u8  variable[0];
 };
 
-enum { SCTP_PARTIAL_DELIVERY_ABORTED=0, };
+struct sctp_operr_chunk {
+	struct sctp_chunkhdr chunk_hdr;
+	struct sctp_errhdr err_hdr;
+};
 
-/*
- * 5.3.1.8.  SCTP_AUTHENTICATION_EVENT
+/* RFC 2960 3.3.10 - Operation Error
  *
- *  When a receiver is using authentication this message will provide
- *  notifications regarding new keys being made active as well as errors.
+ * Cause Code: 16 bits (unsigned integer)
+ *
+ *     Defines the type of error conditions being reported.
+ *    Cause Code
+ *     Value           Cause Code
+ *     ---------      ----------------
+ *      1              Invalid Stream Identifier
+ *      2              Missing Mandatory Parameter
+ *      3              Stale Cookie Error
+ *      4              Out of Resource
+ *      5              Unresolvable Address
+ *      6              Unrecognized Chunk Type
+ *      7              Invalid Mandatory Parameter
+ *      8              Unrecognized Parameters
+ *      9              No User Data
+ *     10              Cookie Received While Shutting Down
  */
-struct sctp_authkey_event {
-	__u16 auth_type;
-	__u16 auth_flags;
-	__u32 auth_length;
-	__u16 auth_keynumber;
-	__u16 auth_altkeynumber;
-	__u32 auth_indication;
-	sctp_assoc_t auth_assoc_id;
+enum sctp_error {
+
+	SCTP_ERROR_NO_ERROR	   = cpu_to_be16(0x00),
+	SCTP_ERROR_INV_STRM	   = cpu_to_be16(0x01),
+	SCTP_ERROR_MISS_PARAM 	   = cpu_to_be16(0x02),
+	SCTP_ERROR_STALE_COOKIE	   = cpu_to_be16(0x03),
+	SCTP_ERROR_NO_RESOURCE 	   = cpu_to_be16(0x04),
+	SCTP_ERROR_DNS_FAILED      = cpu_to_be16(0x05),
+	SCTP_ERROR_UNKNOWN_CHUNK   = cpu_to_be16(0x06),
+	SCTP_ERROR_INV_PARAM       = cpu_to_be16(0x07),
+	SCTP_ERROR_UNKNOWN_PARAM   = cpu_to_be16(0x08),
+	SCTP_ERROR_NO_DATA         = cpu_to_be16(0x09),
+	SCTP_ERROR_COOKIE_IN_SHUTDOWN = cpu_to_be16(0x0a),
+
+
+	/* SCTP Implementation Guide:
+	 *  11  Restart of an association with new addresses
+	 *  12  User Initiated Abort
+	 *  13  Protocol Violation
+	 */
+
+	SCTP_ERROR_RESTART         = cpu_to_be16(0x0b),
+	SCTP_ERROR_USER_ABORT      = cpu_to_be16(0x0c),
+	SCTP_ERROR_PROTO_VIOLATION = cpu_to_be16(0x0d),
+
+	/* ADDIP Section 3.3  New Error Causes
+	 *
+	 * Four new Error Causes are added to the SCTP Operational Errors,
+	 * primarily for use in the ASCONF-ACK chunk.
+	 *
+	 * Value          Cause Code
+	 * ---------      ----------------
+	 * 0x00A0          Request to Delete Last Remaining IP Address.
+	 * 0x00A1          Operation Refused Due to Resource Shortage.
+	 * 0x00A2          Request to Delete Source IP Address.
+	 * 0x00A3          Association Aborted due to illegal ASCONF-ACK
+	 * 0x00A4          Request refused - no authorization.
+	 */
+	SCTP_ERROR_DEL_LAST_IP	= cpu_to_be16(0x00A0),
+	SCTP_ERROR_RSRC_LOW	= cpu_to_be16(0x00A1),
+	SCTP_ERROR_DEL_SRC_IP	= cpu_to_be16(0x00A2),
+	SCTP_ERROR_ASCONF_ACK   = cpu_to_be16(0x00A3),
+	SCTP_ERROR_REQ_REFUSED	= cpu_to_be16(0x00A4),
+
+	/* AUTH Section 4.  New Error Cause
+	 *
+	 * This section defines a new error cause that will be sent if an AUTH
+	 * chunk is received with an unsupported HMAC identifier.
+	 * illustrates the new error cause.
+	 *
+	 * Cause Code      Error Cause Name
+	 * --------------------------------------------------------------
+	 * 0x0105          Unsupported HMAC Identifier
+	 */
+	 SCTP_ERROR_UNSUP_HMAC	= cpu_to_be16(0x0105)
+};
+
+
+
+/* RFC 2960.  Appendix A.  Explicit Congestion Notification.
+ *   Explicit Congestion Notification Echo (ECNE) (12)
+ */
+struct sctp_ecnehdr {
+	__be32 lowest_tsn;
+};
+
+struct sctp_ecne_chunk {
+	struct sctp_chunkhdr chunk_hdr;
+	struct sctp_ecnehdr ence_hdr;
+};
+
+/* RFC 2960.  Appendix A.  Explicit Congestion Notification.
+ *   Congestion Window Reduced (CWR) (13)
+ */
+struct sctp_cwrhdr {
+	__be32 lowest_tsn;
+};
+
+/* PR-SCTP
+ * 3.2 Forward Cumulative TSN Chunk Definition (FORWARD TSN)
+ *
+ * Forward Cumulative TSN chunk has the following format:
+ *
+ *        0                   1                   2                   3
+ *        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ *      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *      |   Type = 192  |  Flags = 0x00 |        Length = Variable      |
+ *      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *      |                      New Cumulative TSN                       |
+ *      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *      |         Stream-1              |       Stream Sequence-1       |
+ *      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *      \                                                               /
+ *      /                                                               \
+ *      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *      |         Stream-N              |       Stream Sequence-N       |
+ *      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *
+ *      Chunk Flags:
+ *
+ *        Set to all zeros on transmit and ignored on receipt.
+ *
+ *      New Cumulative TSN: 32 bit u_int
+ *
+ *       This indicates the new cumulative TSN to the data receiver. Upon
+ *       the reception of this value, the data receiver MUST consider
+ *       any missing TSNs earlier than or equal to this value as received
+ *       and stop reporting them as gaps in any subsequent SACKs.
+ *
+ *      Stream-N: 16 bit u_int
+ *
+ *       This field holds a stream number that was skipped by this
+ *       FWD-TSN.
+ *
+ *      Stream Sequence-N: 16 bit u_int
+ *       This field holds the sequence number associated with the stream
+ *       that was skipped. The stream sequence field holds the largest stream
+ *       sequence number in this stream being skipped.  The receiver of
+ *       the FWD-TSN's can use the Stream-N and Stream Sequence-N fields
+ *       to enable delivery of any stranded TSN's that remain on the stream
+ *       re-ordering queues. This field MUST NOT report TSN's corresponding
+ *       to DATA chunk that are marked as unordered. For ordered DATA
+ *       chunks this field MUST be filled in.
+ */
+struct sctp_fwdtsn_skip {
+	__be16 stream;
+	__be16 ssn;
+};
+
+struct sctp_fwdtsn_hdr {
+	__be32 new_cum_tsn;
+	struct sctp_fwdtsn_skip skip[0];
+};
+
+struct sctp_fwdtsn_chunk {
+	struct sctp_chunkhdr chunk_hdr;
+	struct sctp_fwdtsn_hdr fwdtsn_hdr;
+};
+
+
+/* ADDIP
+ * Section 3.1.1 Address Configuration Change Chunk (ASCONF)
+ *
+ * 	Serial Number: 32 bits (unsigned integer)
+ *	This value represents a Serial Number for the ASCONF Chunk. The
+ *	valid range of Serial Number is from 0 to 2^32-1.
+ *	Serial Numbers wrap back to 0 after reaching 2^32 -1.
+ *
+ *	Address Parameter: 8 or 20 bytes (depending on type)
+ *	The address is an address of the sender of the ASCONF chunk,
+ *	the address MUST be considered part of the association by the
+ *	peer endpoint. This field may be used by the receiver of the 
+ *	ASCONF to help in finding the association. This parameter MUST
+ *	be present in every ASCONF message i.e. it is a mandatory TLV
+ *	parameter.
+ *
+ *	ASCONF Parameter: TLV format
+ *	Each Address configuration change is represented by a TLV
+ *	parameter as defined in Section 3.2. One or more requests may
+ *	be present in an ASCONF Chunk.
+ *
+ * Section 3.1.2 Address Configuration Acknowledgement Chunk (ASCONF-ACK)
+ * 
+ *	Serial Number: 32 bits (unsigned integer)
+ *	This value represents the Serial Number for the received ASCONF
+ *	Chunk that is acknowledged by this chunk. This value is copied
+ *	from the received ASCONF Chunk. 
+ *
+ *	ASCONF Parameter Response: TLV format
+ *	The ASCONF Parameter Response is used in the ASCONF-ACK to
+ *	report status of ASCONF processing.
+ */
+struct sctp_addip_param {
+	struct sctp_paramhdr param_hdr;
+	__be32 crr_id;
+};
+
+struct sctp_addiphdr {
+	__be32	serial;
+	__u8	params[0];
+};
+
+struct sctp_addip_chunk {
+	struct sctp_chunkhdr chunk_hdr;
+	struct sctp_addiphdr addip_hdr;
+};
+
+/* AUTH
+ * Section 4.1  Authentication Chunk (AUTH)
+ *
+ *   This chunk is used to hold the result of the HMAC calculation.
+ *
+ *    0                   1                   2                   3
+ *    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *   | Type = 0x0F   |   Flags=0     |             Length            |
+ *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *   |     Shared Key Identifier     |   HMAC Identifier             |
+ *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *   |                                                               |
+ *   \                             HMAC                              /
+ *   /                                                               \
+ *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *
+ *   Type: 1 byte (unsigned integer)
+ *   	This value MUST be set to 0x0F for  all AUTH-chunks.
+ *
+ *   Flags: 1 byte (unsigned integer)
+ *	Set to zero on transmit and ignored on receipt.
+ *
+ *   Length: 2 bytes (unsigned integer)
+ *   	This value holds the length of the HMAC in bytes plus 8.
+ *
+ *  Shared Key Identifier: 2 bytes (unsigned integer)
+ *	This value describes which endpoint pair shared key is used.
+ *
+ *   HMAC Identifier: 2 bytes (unsigned integer)
+ *   	This value describes which message digest is being used.  Table 2
+ *	shows the currently defined values.
+ *
+ *    The following Table 2 shows the currently defined values for HMAC
+ *       identifiers.
+ *
+ *	 +-----------------+--------------------------+
+ *	 | HMAC Identifier | Message Digest Algorithm |
+ *	 +-----------------+--------------------------+
+ *	 | 0               | Reserved                 |
+ *	 | 1               | SHA-1 defined in [8]     |
+ *	 | 2               | Reserved                 |
+ *	 | 3               | SHA-256 defined in [8]   |
+ *	 +-----------------+--------------------------+
+ *
+ *
+ *   HMAC: n bytes (unsigned integer) This hold the result of the HMAC
+ *      calculation.
+ */
+struct sctp_authhdr {
+	__be16 shkey_id;
+	__be16 hmac_id;
+	__u8   hmac[0];
+};
+
+struct sctp_auth_chunk {
+	struct sctp_chunkhdr chunk_hdr;
+	struct sctp_authhdr auth_hdr;
+};
+
+struct sctp_infox {
+	struct sctp_info *sctpinfo;
+	struct sctp_association *asoc;
+};
+
+struct sctp_reconf_chunk {
+	struct sctp_chunkhdr chunk_hdr;
+	__u8 params[0];
+};
+
+struct sctp_strreset_outreq {
+	struct sctp_paramhdr param_hdr;
+	__be32 request_seq;
+	__be32 response_seq;
+	__be32 send_reset_at_tsn;
+	__be16 list_of_streams[0];
+};
+
+struct sctp_strreset_inreq {
+	struct sctp_paramhdr param_hdr;
+	__be32 request_seq;
+	__be16 list_of_streams[0];
+};
+
+struct sctp_strreset_tsnreq {
+	struct sctp_paramhdr param_hdr;
+	__be32 request_seq;
+};
+
+struct sctp_strreset_addstrm {
+	struct sctp_paramhdr param_hdr;
+	__be32 request_seq;
+	__be16 number_of_streams;
+	__be16 reserved;
 };
 
 enum {
-	SCTP_AUTH_NEW_KEY,
-#define	SCTP_AUTH_NEWKEY	SCTP_AUTH_NEW_KEY /* compatible with before */
-	SCTP_AUTH_FREE_KEY,
-	SCTP_AUTH_NO_AUTH,
+	SCTP_STRRESET_NOTHING_TO_DO	= 0x00,
+	SCTP_STRRESET_PERFORMED		= 0x01,
+	SCTP_STRRESET_DENIED		= 0x02,
+	SCTP_STRRESET_ERR_WRONG_SSN	= 0x03,
+	SCTP_STRRESET_ERR_IN_PROGRESS	= 0x04,
+	SCTP_STRRESET_ERR_BAD_SEQNO	= 0x05,
+	SCTP_STRRESET_IN_PROGRESS	= 0x06,
 };
 
-/*
- * 6.1.9. SCTP_SENDER_DRY_EVENT
- *
- * When the SCTP stack has no more user data to send or retransmit, this
- * notification is given to the user. Also, at the time when a user app
- * subscribes to this event, if there is no data to be sent or
- * retransmit, the stack will immediately send up this notification.
- */
-struct sctp_sender_dry_event {
-	__u16 sender_dry_type;
-	__u16 sender_dry_flags;
-	__u32 sender_dry_length;
-	sctp_assoc_t sender_dry_assoc_id;
+struct sctp_strreset_resp {
+	struct sctp_paramhdr param_hdr;
+	__be32 response_seq;
+	__be32 result;
 };
 
-#define SCTP_STREAM_RESET_INCOMING_SSN	0x0001
-#define SCTP_STREAM_RESET_OUTGOING_SSN	0x0002
-#define SCTP_STREAM_RESET_DENIED	0x0004
-#define SCTP_STREAM_RESET_FAILED	0x0008
-struct sctp_stream_reset_event {
-	__u16 strreset_type;
-	__u16 strreset_flags;
-	__u32 strreset_length;
-	sctp_assoc_t strreset_assoc_id;
-	__u16 strreset_stream_list[];
+struct sctp_strreset_resptsn {
+	struct sctp_paramhdr param_hdr;
+	__be32 response_seq;
+	__be32 result;
+	__be32 senders_next_tsn;
+	__be32 receivers_next_tsn;
 };
 
-#define SCTP_ASSOC_RESET_DENIED		0x0004
-#define SCTP_ASSOC_RESET_FAILED		0x0008
-struct sctp_assoc_reset_event {
-	__u16 assocreset_type;
-	__u16 assocreset_flags;
-	__u32 assocreset_length;
-	sctp_assoc_t assocreset_assoc_id;
-	__u32 assocreset_local_tsn;
-	__u32 assocreset_remote_tsn;
-};
-
-#define SCTP_ASSOC_CHANGE_DENIED	0x0004
-#define SCTP_ASSOC_CHANGE_FAILED	0x0008
-#define SCTP_STREAM_CHANGE_DENIED	SCTP_ASSOC_CHANGE_DENIED
-#define SCTP_STREAM_CHANGE_FAILED	SCTP_ASSOC_CHANGE_FAILED
-struct sctp_stream_change_event {
-	__u16 strchange_type;
-	__u16 strchange_flags;
-	__u32 strchange_length;
-	sctp_assoc_t strchange_assoc_id;
-	__u16 strchange_instrms;
-	__u16 strchange_outstrms;
-};
-
-/*
- * Described in Section 7.3
- *   Ancillary Data and Notification Interest Options
- */
-struct sctp_event_subscribe {
-	__u8 sctp_data_io_event;
-	__u8 sctp_association_event;
-	__u8 sctp_address_event;
-	__u8 sctp_send_failure_event;
-	__u8 sctp_peer_error_event;
-	__u8 sctp_shutdown_event;
-	__u8 sctp_partial_delivery_event;
-	__u8 sctp_adaptation_layer_event;
-	__u8 sctp_authentication_event;
-	__u8 sctp_sender_dry_event;
-	__u8 sctp_stream_reset_event;
-	__u8 sctp_assoc_reset_event;
-	__u8 sctp_stream_change_event;
-	__u8 sctp_send_failure_event_event;
-};
-
-/*
- * 5.3.1 SCTP Notification Structure
- *
- *   The notification structure is defined as the union of all
- *   notification types.
- *
- */
-union sctp_notification {
-	struct {
-		__u16 sn_type;             /* Notification type. */
-		__u16 sn_flags;
-		__u32 sn_length;
-	} sn_header;
-	struct sctp_assoc_change sn_assoc_change;
-	struct sctp_paddr_change sn_paddr_change;
-	struct sctp_remote_error sn_remote_error;
-	struct sctp_send_failed sn_send_failed;
-	struct sctp_shutdown_event sn_shutdown_event;
-	struct sctp_adaptation_event sn_adaptation_event;
-	struct sctp_pdapi_event sn_pdapi_event;
-	struct sctp_authkey_event sn_authkey_event;
-	struct sctp_sender_dry_event sn_sender_dry_event;
-	struct sctp_stream_reset_event sn_strreset_event;
-	struct sctp_assoc_reset_event sn_assocreset_event;
-	struct sctp_stream_change_event sn_strchange_event;
-	struct sctp_send_failed_event sn_send_failed_event;
-};
-
-/* Section 5.3.1
- * All standard values for sn_type flags are greater than 2^15.
- * Values from 2^15 and down are reserved.
- */
-
-enum sctp_sn_type {
-	SCTP_SN_TYPE_BASE	= (1<<15),
-	SCTP_DATA_IO_EVENT	= SCTP_SN_TYPE_BASE,
-#define SCTP_DATA_IO_EVENT		SCTP_DATA_IO_EVENT
-	SCTP_ASSOC_CHANGE,
-#define SCTP_ASSOC_CHANGE		SCTP_ASSOC_CHANGE
-	SCTP_PEER_ADDR_CHANGE,
-#define SCTP_PEER_ADDR_CHANGE		SCTP_PEER_ADDR_CHANGE
-	SCTP_SEND_FAILED,
-#define SCTP_SEND_FAILED		SCTP_SEND_FAILED
-	SCTP_REMOTE_ERROR,
-#define SCTP_REMOTE_ERROR		SCTP_REMOTE_ERROR
-	SCTP_SHUTDOWN_EVENT,
-#define SCTP_SHUTDOWN_EVENT		SCTP_SHUTDOWN_EVENT
-	SCTP_PARTIAL_DELIVERY_EVENT,
-#define SCTP_PARTIAL_DELIVERY_EVENT	SCTP_PARTIAL_DELIVERY_EVENT
-	SCTP_ADAPTATION_INDICATION,
-#define SCTP_ADAPTATION_INDICATION	SCTP_ADAPTATION_INDICATION
-	SCTP_AUTHENTICATION_EVENT,
-#define SCTP_AUTHENTICATION_INDICATION	SCTP_AUTHENTICATION_EVENT
-	SCTP_SENDER_DRY_EVENT,
-#define SCTP_SENDER_DRY_EVENT		SCTP_SENDER_DRY_EVENT
-	SCTP_STREAM_RESET_EVENT,
-#define SCTP_STREAM_RESET_EVENT		SCTP_STREAM_RESET_EVENT
-	SCTP_ASSOC_RESET_EVENT,
-#define SCTP_ASSOC_RESET_EVENT		SCTP_ASSOC_RESET_EVENT
-	SCTP_STREAM_CHANGE_EVENT,
-#define SCTP_STREAM_CHANGE_EVENT	SCTP_STREAM_CHANGE_EVENT
-	SCTP_SEND_FAILED_EVENT,
-#define SCTP_SEND_FAILED_EVENT		SCTP_SEND_FAILED_EVENT
-	SCTP_SN_TYPE_MAX	= SCTP_SEND_FAILED_EVENT,
-#define SCTP_SN_TYPE_MAX		SCTP_SN_TYPE_MAX
-};
-
-/* Notification error codes used to fill up the error fields in some
- * notifications.
- * SCTP_PEER_ADDRESS_CHAGE 	: spc_error
- * SCTP_ASSOC_CHANGE		: sac_error
- * These names should be potentially included in the draft 04 of the SCTP
- * sockets API specification.
- */
-typedef enum sctp_sn_error {
-	SCTP_FAILED_THRESHOLD,
-	SCTP_RECEIVED_SACK,
-	SCTP_HEARTBEAT_SUCCESS,
-	SCTP_RESPONSE_TO_USER_REQ,
-	SCTP_INTERNAL_ERROR,
-	SCTP_SHUTDOWN_GUARD_EXPIRES,
-	SCTP_PEER_FAULTY,
-} sctp_sn_error_t;
-
-/*
- * 7.1.1 Retransmission Timeout Parameters (SCTP_RTOINFO)
- *
- *   The protocol parameters used to initialize and bound retransmission
- *   timeout (RTO) are tunable.  See [SCTP] for more information on how
- *   these parameters are used in RTO calculation.
- */
-struct sctp_rtoinfo {
-	sctp_assoc_t	srto_assoc_id;
-	__u32		srto_initial;
-	__u32		srto_max;
-	__u32		srto_min;
-};
-
-/*
- * 7.1.2 Association Parameters (SCTP_ASSOCINFO)
- *
- *   This option is used to both examine and set various association and
- *   endpoint parameters.
- */
-struct sctp_assocparams {
-	sctp_assoc_t	sasoc_assoc_id;
-	__u16		sasoc_asocmaxrxt;
-	__u16		sasoc_number_peer_destinations;
-	__u32		sasoc_peer_rwnd;
-	__u32		sasoc_local_rwnd;
-	__u32		sasoc_cookie_life;
-};
-
-/*
- * 7.1.9 Set Peer Primary Address (SCTP_SET_PEER_PRIMARY_ADDR)
- *
- *  Requests that the peer mark the enclosed address as the association
- *  primary. The enclosed address must be one of the association's
- *  locally bound addresses. The following structure is used to make a
- *   set primary request:
- */
-struct sctp_setpeerprim {
-	sctp_assoc_t            sspp_assoc_id;
-	struct sockaddr_storage sspp_addr;
-} __attribute__((packed, aligned(4)));
-
-/*
- * 7.1.10 Set Primary Address (SCTP_PRIMARY_ADDR)
- *
- *  Requests that the local SCTP stack use the enclosed peer address as
- *  the association primary. The enclosed address must be one of the
- *  association peer's addresses. The following structure is used to
- *  make a set peer primary request:
- */
-struct sctp_prim {
-	sctp_assoc_t            ssp_assoc_id;
-	struct sockaddr_storage ssp_addr;
-} __attribute__((packed, aligned(4)));
-
-/* For backward compatibility use, define the old name too */
-#define sctp_setprim	sctp_prim
-
-/*
- * 7.1.11 Set Adaptation Layer Indicator (SCTP_ADAPTATION_LAYER)
- *
- * Requests that the local endpoint set the specified Adaptation Layer
- * Indication parameter for all future INIT and INIT-ACK exchanges.
- */
-struct sctp_setadaptation {
-	__u32	ssb_adaptation_ind;
-};
-
-/*
- * 7.1.13 Peer Address Parameters  (SCTP_PEER_ADDR_PARAMS)
- *
- *   Applications can enable or disable heartbeats for any peer address
- *   of an association, modify an address's heartbeat interval, force a
- *   heartbeat to be sent immediately, and adjust the address's maximum
- *   number of retransmissions sent before an address is considered
- *   unreachable. The following structure is used to access and modify an
- *   address's parameters:
- */
-enum  sctp_spp_flags {
-	SPP_HB_ENABLE = 1<<0,		/*Enable heartbeats*/
-	SPP_HB_DISABLE = 1<<1,		/*Disable heartbeats*/
-	SPP_HB = SPP_HB_ENABLE | SPP_HB_DISABLE,
-	SPP_HB_DEMAND = 1<<2,		/*Send heartbeat immediately*/
-	SPP_PMTUD_ENABLE = 1<<3,	/*Enable PMTU discovery*/
-	SPP_PMTUD_DISABLE = 1<<4,	/*Disable PMTU discovery*/
-	SPP_PMTUD = SPP_PMTUD_ENABLE | SPP_PMTUD_DISABLE,
-	SPP_SACKDELAY_ENABLE = 1<<5,	/*Enable SACK*/
-	SPP_SACKDELAY_DISABLE = 1<<6,	/*Disable SACK*/
-	SPP_SACKDELAY = SPP_SACKDELAY_ENABLE | SPP_SACKDELAY_DISABLE,
-	SPP_HB_TIME_IS_ZERO = 1<<7,	/* Set HB delay to 0 */
-	SPP_IPV6_FLOWLABEL = 1<<8,
-	SPP_DSCP = 1<<9,
-};
-
-struct sctp_paddrparams {
-	sctp_assoc_t		spp_assoc_id;
-	struct sockaddr_storage	spp_address;
-	__u32			spp_hbinterval;
-	__u16			spp_pathmaxrxt;
-	__u32			spp_pathmtu;
-	__u32			spp_sackdelay;
-	__u32			spp_flags;
-	__u32			spp_ipv6_flowlabel;
-	__u8			spp_dscp;
-} __attribute__((packed, aligned(4)));
-
-/*
- * 7.1.18.  Add a chunk that must be authenticated (SCTP_AUTH_CHUNK)
- *
- * This set option adds a chunk type that the user is requesting to be
- * received only in an authenticated way.  Changes to the list of chunks
- * will only effect future associations on the socket.
- */
-struct sctp_authchunk {
-	__u8		sauth_chunk;
-};
-
-/*
- * 7.1.19.  Get or set the list of supported HMAC Identifiers (SCTP_HMAC_IDENT)
- *
- * This option gets or sets the list of HMAC algorithms that the local
- * endpoint requires the peer to use.
- */
-/* This here is only used by user space as is. It might not be a good idea
- * to export/reveal the whole structure with reserved fields etc.
- */
-enum {
-	SCTP_AUTH_HMAC_ID_SHA1 = 1,
-	SCTP_AUTH_HMAC_ID_SHA256 = 3,
-};
-
-struct sctp_hmacalgo {
-	__u32		shmac_num_idents;
-	__u16		shmac_idents[];
-};
-
-/* Sadly, user and kernel space have different names for
- * this structure member, so this is to not break anything.
- */
-#define shmac_number_of_idents	shmac_num_idents
-
-/*
- * 7.1.20.  Set a shared key (SCTP_AUTH_KEY)
- *
- * This option will set a shared secret key which is used to build an
- * association shared key.
- */
-struct sctp_authkey {
-	sctp_assoc_t	sca_assoc_id;
-	__u16		sca_keynumber;
-	__u16		sca_keylength;
-	__u8		sca_key[];
-};
-
-/*
- * 7.1.21.  Get or set the active shared key (SCTP_AUTH_ACTIVE_KEY)
- *
- * This option will get or set the active shared key to be used to build
- * the association shared key.
- */
-
-struct sctp_authkeyid {
-	sctp_assoc_t	scact_assoc_id;
-	__u16		scact_keynumber;
-};
-
-
-/*
- * 7.1.23.  Get or set delayed ack timer (SCTP_DELAYED_SACK)
- *
- * This option will effect the way delayed acks are performed.  This
- * option allows you to get or set the delayed ack time, in
- * milliseconds.  It also allows changing the delayed ack frequency.
- * Changing the frequency to 1 disables the delayed sack algorithm.  If
- * the assoc_id is 0, then this sets or gets the endpoints default
- * values.  If the assoc_id field is non-zero, then the set or get
- * effects the specified association for the one to many model (the
- * assoc_id field is ignored by the one to one model).  Note that if
- * sack_delay or sack_freq are 0 when setting this option, then the
- * current values will remain unchanged.
- */
-struct sctp_sack_info {
-	sctp_assoc_t	sack_assoc_id;
-	uint32_t	sack_delay;
-	uint32_t	sack_freq;
-};
-
-struct sctp_assoc_value {
-    sctp_assoc_t            assoc_id;
-    uint32_t                assoc_value;
-};
-
-struct sctp_stream_value {
-	sctp_assoc_t assoc_id;
-	uint16_t stream_id;
-	uint16_t stream_value;
-};
-
-/*
- * 7.2.2 Peer Address Information
- *
- *   Applications can retrieve information about a specific peer address
- *   of an association, including its reachability state, congestion
- *   window, and retransmission timer values.  This information is
- *   read-only. The following structure is used to access this
- *   information:
- */
-struct sctp_paddrinfo {
-	sctp_assoc_t		spinfo_assoc_id;
-	struct sockaddr_storage	spinfo_address;
-	__s32			spinfo_state;
-	__u32			spinfo_cwnd;
-	__u32			spinfo_srtt;
-	__u32			spinfo_rto;
-	__u32			spinfo_mtu;
-} __attribute__((packed, aligned(4)));
-
-/* Peer addresses's state. */
-/* UNKNOWN: Peer address passed by the upper layer in sendmsg or connect[x]
- * calls.
- * UNCONFIRMED: Peer address received in INIT/INIT-ACK address parameters.
- *              Not yet confirmed by a heartbeat and not available for data
- *		transfers.
- * ACTIVE : Peer address confirmed, active and available for data transfers.
- * INACTIVE: Peer address inactive and not available for data transfers.
- */
-enum sctp_spinfo_state {
-	SCTP_INACTIVE,
-	SCTP_PF,
-#define	SCTP_POTENTIALLY_FAILED		SCTP_PF
-	SCTP_ACTIVE,
-	SCTP_UNCONFIRMED,
-	SCTP_UNKNOWN = 0xffff  /* Value used for transport state unknown */
-};
-
-/*
- * 7.2.1 Association Status (SCTP_STATUS)
- *
- *   Applications can retrieve current status information about an
- *   association, including association state, peer receiver window size,
- *   number of unacked data chunks, and number of data chunks pending
- *   receipt.  This information is read-only.  The following structure is
- *   used to access this information:
- */
-struct sctp_status {
-	sctp_assoc_t		sstat_assoc_id;
-	__s32			sstat_state;
-	__u32			sstat_rwnd;
-	__u16			sstat_unackdata;
-	__u16			sstat_penddata;
-	__u16			sstat_instrms;
-	__u16			sstat_outstrms;
-	__u32			sstat_fragmentation_point;
-	struct sctp_paddrinfo	sstat_primary;
-};
-
-/*
- * 7.2.3.  Get the list of chunks the peer requires to be authenticated
- *         (SCTP_PEER_AUTH_CHUNKS)
- *
- * This option gets a list of chunks for a specified association that
- * the peer requires to be received authenticated only.
- */
-struct sctp_authchunks {
-	sctp_assoc_t	gauth_assoc_id;
-	__u32		gauth_number_of_chunks;
-	uint8_t		gauth_chunks[];
-};
-
-/* The broken spelling has been released already in lksctp-tools header,
- * so don't break anyone, now that it's fixed.
- */
-#define guth_number_of_chunks	gauth_number_of_chunks
-
-/* Association states.  */
-enum sctp_sstat_state {
-	SCTP_EMPTY                = 0,
-	SCTP_CLOSED               = 1,
-	SCTP_COOKIE_WAIT          = 2,
-	SCTP_COOKIE_ECHOED        = 3,
-	SCTP_ESTABLISHED          = 4,
-	SCTP_SHUTDOWN_PENDING     = 5,
-	SCTP_SHUTDOWN_SENT        = 6,
-	SCTP_SHUTDOWN_RECEIVED    = 7,
-	SCTP_SHUTDOWN_ACK_SENT    = 8,
-};
-
-/*
- * 8.2.6. Get the Current Identifiers of Associations
- *        (SCTP_GET_ASSOC_ID_LIST)
- *
- * This option gets the current list of SCTP association identifiers of
- * the SCTP associations handled by a one-to-many style socket.
- */
-struct sctp_assoc_ids {
-	__u32		gaids_number_of_ids;
-	sctp_assoc_t	gaids_assoc_id[];
-};
-
-/*
- * 8.3, 8.5 get all peer/local addresses in an association.
- * This parameter struct is used by SCTP_GET_PEER_ADDRS and
- * SCTP_GET_LOCAL_ADDRS socket options used internally to implement
- * sctp_getpaddrs() and sctp_getladdrs() API.
- */
-struct sctp_getaddrs_old {
-	sctp_assoc_t            assoc_id;
-	int			addr_num;
-	struct sockaddr		*addrs;
-};
-
-struct sctp_getaddrs {
-	sctp_assoc_t		assoc_id; /*input*/
-	__u32			addr_num; /*output*/
-	__u8			addrs[]; /*output, variable size*/
-};
-
-/* A socket user request obtained via SCTP_GET_ASSOC_STATS that retrieves
- * association stats. All stats are counts except sas_maxrto and
- * sas_obs_rto_ipaddr. maxrto is the max observed rto + transport since
- * the last call. Will return 0 when RTO was not update since last call
- */
-struct sctp_assoc_stats {
-	sctp_assoc_t	sas_assoc_id;    /* Input */
-					 /* Transport of observed max RTO */
-	struct sockaddr_storage sas_obs_rto_ipaddr;
-	__u64		sas_maxrto;      /* Maximum Observed RTO for period */
-	__u64		sas_isacks;	 /* SACKs received */
-	__u64		sas_osacks;	 /* SACKs sent */
-	__u64		sas_opackets;	 /* Packets sent */
-	__u64		sas_ipackets;	 /* Packets received */
-	__u64		sas_rtxchunks;   /* Retransmitted Chunks */
-	__u64		sas_outofseqtsns;/* TSN received > next expected */
-	__u64		sas_idupchunks;  /* Dups received (ordered+unordered) */
-	__u64		sas_gapcnt;      /* Gap Acknowledgements Received */
-	__u64		sas_ouodchunks;  /* Unordered data chunks sent */
-	__u64		sas_iuodchunks;  /* Unordered data chunks received */
-	__u64		sas_oodchunks;	 /* Ordered data chunks sent */
-	__u64		sas_iodchunks;	 /* Ordered data chunks received */
-	__u64		sas_octrlchunks; /* Control chunks sent */
-	__u64		sas_ictrlchunks; /* Control chunks received */
-};
-
-/*
- * 8.1 sctp_bindx()
- *
- * The flags parameter is formed from the bitwise OR of zero or more of the
- * following currently defined flags:
- */
-#define SCTP_BINDX_ADD_ADDR 0x01
-#define SCTP_BINDX_REM_ADDR 0x02
-
-/* This is the structure that is passed as an argument(optval) to
- * getsockopt(SCTP_SOCKOPT_PEELOFF).
- */
-typedef struct {
-	sctp_assoc_t associd;
-	int sd;
-} sctp_peeloff_arg_t;
-
-typedef struct {
-	sctp_peeloff_arg_t p_arg;
-	unsigned flags;
-} sctp_peeloff_flags_arg_t;
-
-/*
- *  Peer Address Thresholds socket option
- */
-struct sctp_paddrthlds {
-	sctp_assoc_t spt_assoc_id;
-	struct sockaddr_storage spt_address;
-	__u16 spt_pathmaxrxt;
-	__u16 spt_pathpfthld;
-};
-
-/* Use a new structure with spt_pathcpthld for back compatibility */
-struct sctp_paddrthlds_v2 {
-	sctp_assoc_t spt_assoc_id;
-	struct sockaddr_storage spt_address;
-	__u16 spt_pathmaxrxt;
-	__u16 spt_pathpfthld;
-	__u16 spt_pathcpthld;
-};
-
-/*
- * Socket Option for Getting the Association/Stream-Specific PR-SCTP Status
- */
-struct sctp_prstatus {
-	sctp_assoc_t sprstat_assoc_id;
-	__u16 sprstat_sid;
-	__u16 sprstat_policy;
-	__u64 sprstat_abandoned_unsent;
-	__u64 sprstat_abandoned_sent;
-};
-
-struct sctp_default_prinfo {
-	sctp_assoc_t pr_assoc_id;
-	__u32 pr_value;
-	__u16 pr_policy;
-};
-
-struct sctp_info {
-	__u32	sctpi_tag;
-	__u32	sctpi_state;
-	__u32	sctpi_rwnd;
-	__u16	sctpi_unackdata;
-	__u16	sctpi_penddata;
-	__u16	sctpi_instrms;
-	__u16	sctpi_outstrms;
-	__u32	sctpi_fragmentation_point;
-	__u32	sctpi_inqueue;
-	__u32	sctpi_outqueue;
-	__u32	sctpi_overall_error;
-	__u32	sctpi_max_burst;
-	__u32	sctpi_maxseg;
-	__u32	sctpi_peer_rwnd;
-	__u32	sctpi_peer_tag;
-	__u8	sctpi_peer_capable;
-	__u8	sctpi_peer_sack;
-	__u16	__reserved1;
-
-	/* assoc status info */
-	__u64	sctpi_isacks;
-	__u64	sctpi_osacks;
-	__u64	sctpi_opackets;
-	__u64	sctpi_ipackets;
-	__u64	sctpi_rtxchunks;
-	__u64	sctpi_outofseqtsns;
-	__u64	sctpi_idupchunks;
-	__u64	sctpi_gapcnt;
-	__u64	sctpi_ouodchunks;
-	__u64	sctpi_iuodchunks;
-	__u64	sctpi_oodchunks;
-	__u64	sctpi_iodchunks;
-	__u64	sctpi_octrlchunks;
-	__u64	sctpi_ictrlchunks;
-
-	/* primary transport info */
-	struct sockaddr_storage	sctpi_p_address;
-	__s32	sctpi_p_state;
-	__u32	sctpi_p_cwnd;
-	__u32	sctpi_p_srtt;
-	__u32	sctpi_p_rto;
-	__u32	sctpi_p_hbinterval;
-	__u32	sctpi_p_pathmaxrxt;
-	__u32	sctpi_p_sackdelay;
-	__u32	sctpi_p_sackfreq;
-	__u32	sctpi_p_ssthresh;
-	__u32	sctpi_p_partial_bytes_acked;
-	__u32	sctpi_p_flight_size;
-	__u16	sctpi_p_error;
-	__u16	__reserved2;
-
-	/* sctp sock info */
-	__u32	sctpi_s_autoclose;
-	__u32	sctpi_s_adaptation_ind;
-	__u32	sctpi_s_pd_point;
-	__u8	sctpi_s_nodelay;
-	__u8	sctpi_s_disable_fragments;
-	__u8	sctpi_s_v4mapped;
-	__u8	sctpi_s_frag_interleave;
-	__u32	sctpi_s_type;
-	__u32	__reserved3;
-};
-
-struct sctp_reset_streams {
-	sctp_assoc_t srs_assoc_id;
-	uint16_t srs_flags;
-	uint16_t srs_number_streams;	/* 0 == ALL */
-	uint16_t srs_stream_list[];	/* list if srs_num_streams is not 0 */
-};
-
-struct sctp_add_streams {
-	sctp_assoc_t sas_assoc_id;
-	uint16_t sas_instrms;
-	uint16_t sas_outstrms;
-};
-
-struct sctp_event {
-	sctp_assoc_t se_assoc_id;
-	uint16_t se_type;
-	uint8_t se_on;
-};
-
-struct sctp_udpencaps {
-	sctp_assoc_t sue_assoc_id;
-	struct sockaddr_storage sue_address;
-	uint16_t sue_port;
-};
-
-/* SCTP Stream schedulers */
-enum sctp_sched_type {
-	SCTP_SS_FCFS,
-	SCTP_SS_DEFAULT = SCTP_SS_FCFS,
-	SCTP_SS_PRIO,
-	SCTP_SS_RR,
-	SCTP_SS_MAX = SCTP_SS_RR
-};
-
-/* Probe Interval socket option */
-struct sctp_probeinterval {
-	sctp_assoc_t spi_assoc_id;
-	struct sockaddr_storage spi_address;
-	__u32 spi_interval;
-};
-
-#endif /* _SCTP_H */
+#endif /* __LINUX_SCTP_H__ */
