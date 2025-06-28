@@ -49,10 +49,6 @@ alias of:N*T*Cmediatek,mt8195-pwrap mtk_pmic_wrap
 alias of:N*T*Cmediatek,mt8195-pwrapC* mtk_pmic_wrap
 alias of:N*T*Cmediatek,mt8516-pwrap mtk_pmic_wrap
 alias of:N*T*Cmediatek,mt8516-pwrapC* mtk_pmic_wrap
-alias of:N*T*Cmediatek,display_id panel_rm69220_vxn
-alias of:N*T*Cmediatek,display_idC* panel_rm69220_vxn
-alias of:N*T*Crm69220,vxn panel_rm69220_vxn
-alias of:N*T*Crm69220,vxnC* panel_rm69220_vxn
 alias of:N*T*Cmediatek,mt2712-i2c i2c_mt65xx
 alias of:N*T*Cmediatek,mt2712-i2cC* i2c_mt65xx
 alias of:N*T*Cmediatek,mt6577-i2c i2c_mt65xx
@@ -119,8 +115,6 @@ alias of:N*T*Cmediatek,mt6985-spmi spmi_mtk_pmif
 alias of:N*T*Cmediatek,mt6985-spmiC* spmi_mtk_pmif
 alias of:N*T*Cmediatek,mt6989-spmi spmi_mtk_pmif
 alias of:N*T*Cmediatek,mt6989-spmiC* spmi_mtk_pmif
-alias of:N*T*Cvdtr6130,cmd,120hz,csot,oled panel_vdtr6130_fhdp_dsi_cmd_dphy_120hz_csot
-alias of:N*T*Cvdtr6130,cmd,120hz,csot,oledC* panel_vdtr6130_fhdp_dsi_cmd_dphy_120hz_csot
 alias of:N*T*Ctruly,nt35595,cmd panel_truly_nt35595_cmd
 alias of:N*T*Ctruly,nt35595,cmdC* panel_truly_nt35595_cmd
 alias of:N*T*Cmediatek,mtk_ctd mtk_chg_type_det
@@ -146,8 +140,6 @@ alias of:N*T*Cmediatek,mt6886-disp-pwm pwm_mtk_disp
 alias of:N*T*Cmediatek,mt6886-disp-pwmC* pwm_mtk_disp
 alias of:N*T*Cmediatek,mt6835-disp-pwm pwm_mtk_disp
 alias of:N*T*Cmediatek,mt6835-disp-pwmC* pwm_mtk_disp
-alias of:N*T*Cmediatek,mt6897-disp-pwm pwm_mtk_disp
-alias of:N*T*Cmediatek,mt6897-disp-pwmC* pwm_mtk_disp
 alias of:N*T*Cmediatek,mt6685-rtc rtc_mt6685
 alias of:N*T*Cmediatek,mt6685-rtcC* rtc_mt6685
 alias of:N*T*Cmediatek,mt6359p-dynamic_loading_throttling mtk_dynamic_loading_throttling
@@ -1032,10 +1024,6 @@ alias of:N*T*Cmediatek,mt6878-mmc mtk_mmc
 alias of:N*T*Cmediatek,mt6878-mmcC* mtk_mmc
 alias of:N*T*Cmediatek,rt-pd-manager rt_pd_manager
 alias of:N*T*Cmediatek,rt-pd-managerC* rt_pd_manager
-alias of:N*T*Cmediatek,display_id panel_rm69220_boe
-alias of:N*T*Cmediatek,display_idC* panel_rm69220_boe
-alias of:N*T*Crm69220,boe panel_rm69220_boe
-alias of:N*T*Crm69220,boeC* panel_rm69220_boe
 alias of:N*T*Cmediatek,xsphy phy_mtk_xsphy
 alias of:N*T*Cmediatek,xsphyC* phy_mtk_xsphy
 alias of:N*T*Cmediatek,mt6983-mml mtk_mml
@@ -1306,10 +1294,6 @@ alias of:N*T*Cjdi,nt36672e,vdo,144hz panel_alpha_jdi_nt36672e_vdo_144hz
 alias of:N*T*Cjdi,nt36672e,vdo,144hzC* panel_alpha_jdi_nt36672e_vdo_144hz
 alias of:N*T*Cmediatek,mt6878-mmqos mmqos_mt6878
 alias of:N*T*Cmediatek,mt6878-mmqosC* mmqos_mt6878
-alias of:N*T*Cmediatek,display_id panel_epd8820_boe
-alias of:N*T*Cmediatek,display_idC* panel_epd8820_boe
-alias of:N*T*Cepd8820,boe panel_epd8820_boe
-alias of:N*T*Cepd8820,boeC* panel_epd8820_boe
 alias of:N*T*Cmediatek,charger,pe45 mtk_pep45
 alias of:N*T*Cmediatek,charger,pe45C* mtk_pep45
 alias platform:mt6363-regulator mt6363_regulator

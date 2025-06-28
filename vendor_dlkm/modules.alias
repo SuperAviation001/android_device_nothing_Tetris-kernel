@@ -1,8 +1,6 @@
 # Aliases extracted from modules themselves.
 alias of:N*T*Cmediatek,cgppt mtk_cg_peak_power_throttling
 alias of:N*T*Cmediatek,cgpptC* mtk_cg_peak_power_throttling
-alias of:N*T*Cgpio,board-id,galaga board_id_galaga
-alias of:N*T*Cgpio,board-id,galagaC* board_id_galaga
 alias spi:gf_spi goodix_fp
 alias of:N*T*Cmediatek,fingerprint goodix_fp
 alias of:N*T*Cmediatek,fingerprintC* goodix_fp
@@ -85,9 +83,6 @@ alias of:N*T*Cmediatek,peak_power_budget mtk_peak_power_budget
 alias of:N*T*Cmediatek,peak_power_budgetC* mtk_peak_power_budget
 alias of:N*T*Cmediatek,cpu-power-throttling mtk_cpu_power_throttling
 alias of:N*T*Cmediatek,cpu-power-throttlingC* mtk_cpu_power_throttling
-alias i2c:cn3968 cn3968
-alias of:N*T*Cmediatek,cn3968 cn3968
-alias of:N*T*Cmediatek,cn3968C* cn3968
 alias of:N*T*Cmediatek,mt6873-lvts soc_temp_lvts
 alias of:N*T*Cmediatek,mt6873-lvtsC* soc_temp_lvts
 alias of:N*T*Cmediatek,mt6853-lvts soc_temp_lvts
@@ -137,9 +132,6 @@ alias of:N*T*Cmediatek-vcuC* mtk_vcu
 alias of:N*T*Cmediatek,vcu-io-venc mtk_vcu
 alias of:N*T*Cmediatek,vcu-io-vencC* mtk_vcu
 alias usbfunc:via_atc c2k_usb_f_via_atc
-alias i2c:dio8016 dio8016_regulator
-alias of:N*T*Cdioo,dio8016 dio8016_regulator
-alias of:N*T*Cdioo,dio8016C* dio8016_regulator
 alias i2c:main_vcm main_vcm
 alias of:N*T*Cmediatek,main_vcm main_vcm
 alias of:N*T*Cmediatek,main_vcmC* main_vcm
@@ -170,9 +162,6 @@ alias of:N*T*Cmediatek,ccu_rproc mtk_ccuv
 alias of:N*T*Cmediatek,ccu_rprocC* mtk_ccuv
 alias of:N*T*Cmediatek,ccucammain mtk_ccuv
 alias of:N*T*Cmediatek,ccucammainC* mtk_ccuv
-alias i2c:ocp81375 ocp81375
-alias of:N*T*Cmediatek,ocp81375 ocp81375
-alias of:N*T*Cmediatek,ocp81375C* ocp81375
 alias of:N*T*Candroid,trusty-virtio-v1 gz_virtio_mod
 alias of:N*T*Candroid,trusty-virtio-v1C* gz_virtio_mod
 alias of:N*T*Candroid,nebula-virtio-v1 gz_virtio_mod
@@ -187,10 +176,6 @@ alias of:N*T*Crichtek,rt5512C* snd_soc_rt5512
 alias i2c:rt5512 snd_soc_rt5512
 alias of:N*T*Csyscon-reboot-mode syscon_reboot_mode
 alias of:N*T*Csyscon-reboot-modeC* syscon_reboot_mode
-alias i2c:et5924a et5924a_regulator
-alias of:N*T*Cetek,et5924 et5924a_regulator
-alias of:N*T*Cetek,et5924C* et5924a_regulator
-alias i2c:tfa98xx snd_soc_tfa9873
 alias of:N*T*Cmediatek,camera_eeprom camera_eeprom_v4l2
 alias of:N*T*Cmediatek,camera_eepromC* camera_eeprom_v4l2
 alias of:N*T*Cmediatek,scp-audio-mbox mtk_scp_audiocommon
@@ -279,12 +264,15 @@ alias of:N*T*Cmediatek,clk-disable-unused clk_disable_unused
 alias of:N*T*Cmediatek,clk-disable-unusedC* clk_disable_unused
 alias of:N*T*Cmediatek,gpufreq mtk_gpufreq_mt6878
 alias of:N*T*Cmediatek,gpufreqC* mtk_gpufreq_mt6878
-alias of:N*T*Cgpio,board-id,tetris board_id
-alias of:N*T*Cgpio,board-id,tetrisC* board_id
+alias of:N*T*Cgpio,board-id board_id
+alias of:N*T*Cgpio,board-idC* board_id
 alias of:N*T*Cmediatek,mtk-btcvsd-snd mtk_btcvsd
 alias of:N*T*Cmediatek,mtk-btcvsd-sndC* mtk_btcvsd
 alias of:N*T*Cmediatek,gpufreq_wrapper mtk_gpufreq_wrapper
 alias of:N*T*Cmediatek,gpufreq_wrapperC* mtk_gpufreq_wrapper
+alias of:N*T*Cgoodix,tfa9874 snd_soc_tfa98xx
+alias of:N*T*Cgoodix,tfa9874C* snd_soc_tfa98xx
+alias i2c:tfa9874 snd_soc_tfa98xx
 alias of:N*T*Cmediatek,mtk_composite_v4l2_1 mtk_composite
 alias of:N*T*Cmediatek,mtk_composite_v4l2_1C* mtk_composite
 alias net-pf-16-proto-16-family-nl80211 cfg80211
@@ -425,9 +413,6 @@ alias of:N*T*Cmediatek,secure-apu-smmu-device apusys
 alias of:N*T*Cmediatek,secure-apu-smmu-deviceC* apusys
 alias of:N*T*Cmediatek,gpu-power-throttling mtk_gpu_power_throttling
 alias of:N*T*Cmediatek,gpu-power-throttlingC* mtk_gpu_power_throttling
-alias i2c:sgm37864 sgm37864
-alias of:N*T*Cmediatek,sgm37864 sgm37864
-alias of:N*T*Cmediatek,sgm37864C* sgm37864
 alias of:N*T*Cmediatek,mt6878-spmi-pmif-mpu spmi_mtk_mpu
 alias of:N*T*Cmediatek,mt6878-spmi-pmif-mpuC* spmi_mtk_mpu
 alias of:N*T*Cmediatek,mt6886-spmi_pmif_mpu spmi_mtk_mpu

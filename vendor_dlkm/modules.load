@@ -51,7 +51,7 @@ mtk-scp-audiocommon.ko
 usb_offload.ko
 snd-soc-rt5512.ko
 richtek_spm_cls.ko
-snd-soc-tfa9873.ko
+snd-soc-tfa98xx.ko
 mtk-sp-spk-amp.ko
 mtk-btcvsd.ko
 snd-soc-mtk-common.ko
@@ -130,6 +130,7 @@ mtk-lpm-dbg-common-v2.ko
 mtk-lpm-plat-v1.ko
 mtk-lpm-dbg-mt6878.ko
 lpm-gov-MHSP.ko
+fmradio_drv_connac2x.ko
 gps_drv_dl_v051.ko
 mtk_qos.ko
 powerhal_cpu_ctrl.ko
@@ -142,8 +143,6 @@ hf_manager.ko
 sensorhub.ko
 mtk-composite.ko
 lm3644.ko
-ocp81375.ko
-sgm37864.ko
 flashlight.ko
 gz_trusty_mod.ko
 gz_ipc_mod.ko
@@ -159,7 +158,6 @@ main2_vcm.ko
 main3_vcm.ko
 main4_vcm.ko
 pd9302a.ko
-cn3968.ko
 dw9781c.ko
 sub_vcm.ko
 pda_drv_mt6878.ko
@@ -168,8 +166,6 @@ mtk_heap_debug.ko
 sapu.ko
 iommu_test.ko
 t-base-tui.ko
-et5924a-regulator.ko
-dio8016-regulator.ko
 atf_logger.ko
 mtk_core_ctl.ko
 mtk-dvfsrc-start.ko
@@ -194,6 +190,7 @@ mtk_perf_ioctl_magt.ko
 mtk-mmdvfs-v3-start.ko
 uload_ind.ko
 load_track.ko
+sec.ko
 mtk_c2ps.ko
 mtk_mbraink.ko
 c2ps_perf_ioctl.ko
@@ -207,7 +204,4 @@ nothing_task_info.ko
 nothing_readahead_trace.ko
 nothing_disk_usage.ko
 board_id.ko
-board_id_galaga.ko
 nothing_check_parts.ko
-touchpanel_event_notify.ko
-tms_device_modules.ko
