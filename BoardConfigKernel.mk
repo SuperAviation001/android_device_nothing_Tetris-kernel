@@ -4,12 +4,12 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-DEVICE_KERNEL_PATH := device/nothing/tetris-kernel
+DEVICE_KERNEL_PATH := device/nothing/Tetris-kernel
 
 BUILD_BROKEN_ELF_PREBUILT_PRODUCT_COPY_FILES := true
 
 # Kernel
-TARGET_KERNEL_SOURCE := device/nothing/tetris-kernel/kernel-headers
+TARGET_KERNEL_SOURCE := device/nothing/Tetris-kernel/kernel-headers
 TARGET_PREBUILT_KERNEL := $(DEVICE_KERNEL_PATH)/Image
 TARGET_FORCE_PREBUILT_KERNEL := true
 TARGET_KERNEL_CONFIG := gki_defconfig
